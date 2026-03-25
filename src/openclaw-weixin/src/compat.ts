@@ -6,11 +6,11 @@
  * the supported range for this plugin version.
  */
 
-import { logger } from "./util/logger.js";
+import { logger } from './util/logger.js';
 
-export const PLUGIN_VERSION = "2.0.0";
+export const PLUGIN_VERSION = '2.0.0';
 
-export const SUPPORTED_HOST_MIN = "2026.3.22";
+export const SUPPORTED_HOST_MIN = '2026.3.22';
 
 export interface OpenClawVersion {
   year: number;
@@ -24,19 +24,23 @@ export interface OpenClawVersion {
  */
 export function parseOpenClawVersion(version: string): OpenClawVersion | null {
   // Strip any pre-release suffix (e.g. "2026.3.22-beta.1" -> "2026.3.22")
-  const base = version.trim().split("-")[0];
-  const parts = base.split(".");
+  const base = version.trim().split('-')[0];
+  const parts = base.split('.');
   if (parts.length !== 3) return null;
   const [year, month, day] = parts.map(Number);
-  if (Number.isNaN(year) || Number.isNaN(month) || Number.isNaN(day)) return null;
+  if (Number.isNaN(year) || Number.isNaN(month) || Number.isNaN(day))
+    return null;
   return { year, month, day };
 }
 
 /**
  * Compare two parsed versions.  Returns -1 | 0 | 1.
  */
-export function compareVersions(a: OpenClawVersion, b: OpenClawVersion): -1 | 0 | 1 {
-  for (const key of ["year", "month", "day"] as const) {
+export function compareVersions(
+  a: OpenClawVersion,
+  b: OpenClawVersion,
+): -1 | 0 | 1 {
+  for (const key of ['year', 'month', 'day'] as const) {
     if (a[key] < b[key]) return -1;
     if (a[key] > b[key]) return 1;
   }
@@ -60,20 +64,22 @@ export function isHostVersionSupported(hostVersion: string): boolean {
  * @throws {Error} with a human-readable message when the host is out of range.
  */
 export function assertHostCompatibility(hostVersion: string | undefined): void {
-  if (!hostVersion || hostVersion === "unknown") {
+  if (!hostVersion || hostVersion === 'unknown') {
     logger.warn(
       `[compat] Could not determine host OpenClaw version; skipping compatibility check.`,
     );
     return;
   }
   if (isHostVersionSupported(hostVersion)) {
-    logger.info(`[compat] Host OpenClaw ${hostVersion} >= ${SUPPORTED_HOST_MIN}, OK.`);
+    logger.info(
+      `[compat] Host OpenClaw ${hostVersion} >= ${SUPPORTED_HOST_MIN}, OK.`,
+    );
     return;
   }
   throw new Error(
     `openclaw-weixin@${PLUGIN_VERSION} requires OpenClaw >=${SUPPORTED_HOST_MIN}, ` +
-    `but found ${hostVersion}. ` +
-    `Please upgrade OpenClaw, or install openclaw-weixin@1.x (legacy) for older hosts:\n` +
-    `  openclaw plugins install @tencent-weixin/openclaw-weixin@legacy`,
+      `but found ${hostVersion}. ` +
+      `Please upgrade OpenClaw, or install openclaw-weixin@1.x (legacy) for older hosts:\n` +
+      `  openclaw plugins install @tencent-weixin/openclaw-weixin@legacy`,
   );
 }

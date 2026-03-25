@@ -1,10 +1,10 @@
-import fs from "node:fs";
-import path from "node:path";
+import fs from 'node:fs';
+import path from 'node:path';
 
-import { withFileLock } from "openclaw/plugin-sdk/infra-runtime";
+import { withFileLock } from 'openclaw/plugin-sdk/infra-runtime';
 
-import { resolveStateDir } from "../storage/state-dir.js";
-import { logger } from "../util/logger.js";
+import { resolveStateDir } from '../storage/state-dir.js';
+import { logger } from '../util/logger.js';
 
 /**
  * Resolve the framework credentials directory (mirrors core resolveOAuthDir).
@@ -13,7 +13,7 @@ import { logger } from "../util/logger.js";
 function resolveCredentialsDir(): string {
   const override = process.env.OPENCLAW_OAUTH_DIR?.trim();
   if (override) return override;
-  return path.join(resolveStateDir(), "credentials");
+  return path.join(resolveStateDir(), 'credentials');
 }
 
 /**
@@ -21,9 +21,9 @@ function resolveCredentialsDir(): string {
  */
 function safeKey(raw: string): string {
   const trimmed = raw.trim().toLowerCase();
-  if (!trimmed) throw new Error("invalid key for allowFrom path");
-  const safe = trimmed.replace(/[\\/:*?"<>|]/g, "_").replace(/\.\./g, "_");
-  if (!safe || safe === "_") throw new Error("invalid key for allowFrom path");
+  if (!trimmed) throw new Error('invalid key for allowFrom path');
+  const safe = trimmed.replace(/[\\/:*?"<>|]/g, '_').replace(/\.\./g, '_');
+  if (!safe || safe === '_') throw new Error('invalid key for allowFrom path');
   return safe;
 }
 
@@ -33,9 +33,12 @@ function safeKey(raw: string): string {
  * Path: `<credDir>/openclaw-weixin-<accountId>-allowFrom.json`
  */
 export function resolveFrameworkAllowFromPath(accountId: string): string {
-  const base = safeKey("openclaw-weixin");
+  const base = safeKey('openclaw-weixin');
   const safeAccount = safeKey(accountId);
-  return path.join(resolveCredentialsDir(), `${base}-${safeAccount}-allowFrom.json`);
+  return path.join(
+    resolveCredentialsDir(),
+    `${base}-${safeAccount}-allowFrom.json`,
+  );
 }
 
 type AllowFromFileContent = {
@@ -51,10 +54,12 @@ export function readFrameworkAllowFromList(accountId: string): string[] {
   const filePath = resolveFrameworkAllowFromPath(accountId);
   try {
     if (!fs.existsSync(filePath)) return [];
-    const raw = fs.readFileSync(filePath, "utf-8");
+    const raw = fs.readFileSync(filePath, 'utf-8');
     const parsed = JSON.parse(raw) as AllowFromFileContent;
     if (Array.isArray(parsed.allowFrom)) {
-      return parsed.allowFrom.filter((id): id is string => typeof id === "string" && id.trim() !== "");
+      return parsed.allowFrom.filter(
+        (id): id is string => typeof id === 'string' && id.trim() !== '',
+      );
     }
   } catch {
     // best-effort
@@ -91,13 +96,13 @@ export async function registerUserInFrameworkStore(params: {
   // Ensure the file exists before locking
   if (!fs.existsSync(filePath)) {
     const initial: AllowFromFileContent = { version: 1, allowFrom: [] };
-    fs.writeFileSync(filePath, JSON.stringify(initial, null, 2), "utf-8");
+    fs.writeFileSync(filePath, JSON.stringify(initial, null, 2), 'utf-8');
   }
 
   return await withFileLock(filePath, LOCK_OPTIONS, async () => {
     let content: AllowFromFileContent = { version: 1, allowFrom: [] };
     try {
-      const raw = fs.readFileSync(filePath, "utf-8");
+      const raw = fs.readFileSync(filePath, 'utf-8');
       const parsed = JSON.parse(raw) as AllowFromFileContent;
       if (Array.isArray(parsed.allowFrom)) {
         content = parsed;
@@ -111,7 +116,7 @@ export async function registerUserInFrameworkStore(params: {
     }
 
     content.allowFrom.push(trimmedUserId);
-    fs.writeFileSync(filePath, JSON.stringify(content, null, 2), "utf-8");
+    fs.writeFileSync(filePath, JSON.stringify(content, null, 2), 'utf-8');
     logger.info(
       `registerUserInFrameworkStore: added userId=${trimmedUserId} accountId=${accountId} path=${filePath}`,
     );

@@ -44,16 +44,8 @@ export interface WeixinChannelOpts {
 }
 
 // Re-export types for compatibility with existing code
-export type {
-  WeixinMessage,
-  MessageItem,
-  GetUpdatesResp,
-};
-export {
-  MessageItemType,
-  MessageType,
-  MessageState,
-};
+export type { WeixinMessage, MessageItem, GetUpdatesResp };
+export { MessageItemType, MessageType, MessageState };
 
 /** Extract body text from message items */
 function bodyFromItemList(itemList?: MessageItem[]): string {
@@ -241,11 +233,7 @@ export class WeixinChannel implements Channel {
   }
 
   private async processMessage(msg: WeixinMessage): Promise<void> {
-
-    logger.info(
-      msg,
-      'WeChat message recieved',
-    );
+    logger.info(msg, 'WeChat message recieved');
 
     const fromUserId = msg.from_user_id || '';
     const chatJid = `wx:${fromUserId}`;
@@ -370,7 +358,7 @@ export class WeixinChannel implements Channel {
         : [];
 
       const msg = {
-        from_user_id: "",
+        from_user_id: '',
         to_user_id: userId,
         client_id: generateId('nanoclaw'),
         message_type: MessageType.BOT,
@@ -379,7 +367,7 @@ export class WeixinChannel implements Channel {
         context_token: contextToken,
       };
 
-      logger.info(msg, "Message Object");
+      logger.info(msg, 'Message Object');
 
       logger.info(
         {
@@ -402,7 +390,9 @@ export class WeixinChannel implements Channel {
         {
           jid,
           length: text.length,
-          contextTokenUsed: contextToken ? `${contextToken.slice(0, 10)}...` : undefined,
+          contextTokenUsed: contextToken
+            ? `${contextToken.slice(0, 10)}...`
+            : undefined,
         },
         'WeChat message sent',
       );

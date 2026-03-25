@@ -25,10 +25,18 @@ const secrets = readEnvFile([
 
 console.log('=== Credential Proxy Real API Test ===\n');
 console.log('Configuration:');
-console.log(`  Base URL: ${secrets.ANTHROPIC_BASE_URL || 'default (https://api.anthropic.com)'}`);
-console.log(`  Model: ${secrets.ANTHROPIC_MODEL || 'claude-sonnet-4-5-20251101'}`);
-console.log(`  API Key: ${secrets.ANTHROPIC_API_KEY ? 'configured' : 'not set'}`);
-console.log(`  OAuth Token: ${secrets.ANTHROPIC_AUTH_TOKEN ? 'configured' : 'not set'}`);
+console.log(
+  `  Base URL: ${secrets.ANTHROPIC_BASE_URL || 'default (https://api.anthropic.com)'}`,
+);
+console.log(
+  `  Model: ${secrets.ANTHROPIC_MODEL || 'claude-sonnet-4-5-20251101'}`,
+);
+console.log(
+  `  API Key: ${secrets.ANTHROPIC_API_KEY ? 'configured' : 'not set'}`,
+);
+console.log(
+  `  OAuth Token: ${secrets.ANTHROPIC_AUTH_TOKEN ? 'configured' : 'not set'}`,
+);
 console.log('');
 
 // Validate required configuration
@@ -56,9 +64,7 @@ startCredentialProxy(PROXY_PORT)
     const requestBody = JSON.stringify({
       model: secrets.ANTHROPIC_MODEL || 'claude-sonnet-4-5-20251101',
       max_tokens: 100,
-      messages: [
-        { role: 'user', content: 'Say hello in one word' }
-      ],
+      messages: [{ role: 'user', content: 'Say hello in one word' }],
     });
 
     console.log('Sending test request...');
@@ -106,7 +112,7 @@ startCredentialProxy(PROXY_PORT)
               reject(new Error(`HTTP ${res.statusCode}: ${body}`));
             }
           });
-        }
+        },
       );
 
       req.on('error', (err) => {

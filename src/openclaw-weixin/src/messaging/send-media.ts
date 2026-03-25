@@ -1,9 +1,17 @@
-import path from "node:path";
-import type { WeixinApiOptions } from "../api/api.js";
-import { logger } from "../util/logger.js";
-import { getMimeFromFilename } from "../media/mime.js";
-import { sendFileMessageWeixin, sendImageMessageWeixin, sendVideoMessageWeixin } from "./send.js";
-import { uploadFileAttachmentToWeixin, uploadFileToWeixin, uploadVideoToWeixin } from "../cdn/upload.js";
+import path from 'node:path';
+import type { WeixinApiOptions } from '../api/api.js';
+import { logger } from '../util/logger.js';
+import { getMimeFromFilename } from '../media/mime.js';
+import {
+  sendFileMessageWeixin,
+  sendImageMessageWeixin,
+  sendVideoMessageWeixin,
+} from './send.js';
+import {
+  uploadFileAttachmentToWeixin,
+  uploadFileToWeixin,
+  uploadVideoToWeixin,
+} from '../cdn/upload.js';
 
 /**
  * Upload a local file and send it as a weixin message, routing by MIME type:
@@ -23,10 +31,15 @@ export async function sendWeixinMediaFile(params: {
 }): Promise<{ messageId: string }> {
   const { filePath, to, text, opts, cdnBaseUrl } = params;
   const mime = getMimeFromFilename(filePath);
-  const uploadOpts: WeixinApiOptions = { baseUrl: opts.baseUrl, token: opts.token };
+  const uploadOpts: WeixinApiOptions = {
+    baseUrl: opts.baseUrl,
+    token: opts.token,
+  };
 
-  if (mime.startsWith("video/")) {
-    logger.info(`[weixin] sendWeixinMediaFile: uploading video filePath=${filePath} to=${to}`);
+  if (mime.startsWith('video/')) {
+    logger.info(
+      `[weixin] sendWeixinMediaFile: uploading video filePath=${filePath} to=${to}`,
+    );
     const uploaded = await uploadVideoToWeixin({
       filePath,
       toUserId: to,
@@ -39,8 +52,10 @@ export async function sendWeixinMediaFile(params: {
     return sendVideoMessageWeixin({ to, text, uploaded, opts });
   }
 
-  if (mime.startsWith("image/")) {
-    logger.info(`[weixin] sendWeixinMediaFile: uploading image filePath=${filePath} to=${to}`);
+  if (mime.startsWith('image/')) {
+    logger.info(
+      `[weixin] sendWeixinMediaFile: uploading image filePath=${filePath} to=${to}`,
+    );
     const uploaded = await uploadFileToWeixin({
       filePath,
       toUserId: to,

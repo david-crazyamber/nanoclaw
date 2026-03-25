@@ -28,7 +28,9 @@ try {
 }
 
 // Hoist mock data container so it's available to vi.mock
-const mockEnvContainer = vi.hoisted(() => ({ data: {} as Record<string, string> }));
+const mockEnvContainer = vi.hoisted(() => ({
+  data: {} as Record<string, string>,
+}));
 
 vi.mock('./env.js', () => ({
   readEnvFile: vi.fn(() => ({ ...mockEnvContainer.data })),
@@ -101,7 +103,8 @@ describe('credential-proxy', () => {
   async function startProxy(env: Record<string, string>): Promise<number> {
     mockEnvContainer.data = {
       ...env,
-      ANTHROPIC_BASE_URL: env.ANTHROPIC_BASE_URL || `http://127.0.0.1:${upstreamPort!}`,
+      ANTHROPIC_BASE_URL:
+        env.ANTHROPIC_BASE_URL || `http://127.0.0.1:${upstreamPort!}`,
     };
     proxyServer = await startCredentialProxy(0);
     return (proxyServer.address() as AddressInfo).port;
@@ -242,9 +245,7 @@ describe('credential-proxy', () => {
     const requestBody = JSON.stringify({
       model: realEnv.ANTHROPIC_MODEL,
       max_tokens: 100,
-      messages: [
-        { role: 'user', content: 'Say hello in one word' }
-      ],
+      messages: [{ role: 'user', content: 'Say hello in one word' }],
     });
 
     const res = await makeRequest(
@@ -263,7 +264,10 @@ describe('credential-proxy', () => {
     // If status code is 2xx, the proxy correctly forwarded the request
     // and the API returned a valid response
     if (res.statusCode >= 200 && res.statusCode < 300) {
-      console.log('API response:', JSON.stringify(JSON.parse(res.body), null, 2));
+      console.log(
+        'API response:',
+        JSON.stringify(JSON.parse(res.body), null, 2),
+      );
       expect(res.body).toBeTruthy();
       // Parse response to ensure it's valid JSON
       const responseData = JSON.parse(res.body);

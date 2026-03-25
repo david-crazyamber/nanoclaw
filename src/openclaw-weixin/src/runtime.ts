@@ -1,10 +1,10 @@
-import type { PluginRuntime } from "openclaw/plugin-sdk/core";
+import type { PluginRuntime } from 'openclaw/plugin-sdk/core';
 
-import { logger } from "./util/logger.js";
+import { logger } from './util/logger.js';
 
 let pluginRuntime: PluginRuntime | null = null;
 
-export type PluginChannelRuntime = PluginRuntime["channel"];
+export type PluginChannelRuntime = PluginRuntime['channel'];
 
 /**
  * Sets the global Weixin runtime (called from plugin register).
@@ -19,7 +19,7 @@ export function setWeixinRuntime(next: PluginRuntime): void {
  */
 export function getWeixinRuntime(): PluginRuntime {
   if (!pluginRuntime) {
-    throw new Error("Weixin runtime not initialized");
+    throw new Error('Weixin runtime not initialized');
   }
   return pluginRuntime;
 }
@@ -36,7 +36,7 @@ export async function waitForWeixinRuntime(
   const start = Date.now();
   while (!pluginRuntime) {
     if (Date.now() - start > timeoutMs) {
-      throw new Error("Weixin runtime initialization timeout");
+      throw new Error('Weixin runtime initialization timeout');
     }
     await new Promise((resolve) => setTimeout(resolve, WAIT_INTERVAL_MS));
   }
@@ -55,16 +55,18 @@ export async function resolveWeixinChannelRuntime(params: {
   waitTimeoutMs?: number;
 }): Promise<PluginChannelRuntime> {
   if (params.channelRuntime) {
-    logger.debug("[runtime] channelRuntime from gateway context");
+    logger.debug('[runtime] channelRuntime from gateway context');
     return params.channelRuntime;
   }
   if (pluginRuntime) {
-    logger.debug("[runtime] channelRuntime from register() global");
+    logger.debug('[runtime] channelRuntime from register() global');
     return pluginRuntime.channel;
   }
   logger.warn(
-    "[runtime] no channelRuntime on ctx and no global runtime yet; waiting for register()",
+    '[runtime] no channelRuntime on ctx and no global runtime yet; waiting for register()',
   );
-  const pr = await waitForWeixinRuntime(params.waitTimeoutMs ?? DEFAULT_TIMEOUT_MS);
+  const pr = await waitForWeixinRuntime(
+    params.waitTimeoutMs ?? DEFAULT_TIMEOUT_MS,
+  );
   return pr.channel;
 }

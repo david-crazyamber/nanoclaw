@@ -89,7 +89,8 @@ export function startCredentialProxy(
       oauthTokenStatus: oauthToken
         ? truncateSecret(oauthToken)
         : 'not configured',
-      anthropicBaseUrl: secrets.ANTHROPIC_BASE_URL || 'default (https://api.anthropic.com)',
+      anthropicBaseUrl:
+        secrets.ANTHROPIC_BASE_URL || 'default (https://api.anthropic.com)',
     },
     'Credential proxy started',
   );
@@ -110,7 +111,9 @@ export function startCredentialProxy(
       {
         reason: 'ANTHROPIC_API_KEY not found in environment',
         fallingBackTo: 'OAuth token',
-        oauthTokenTruncated: oauthToken ? truncateSecret(oauthToken) : 'MISSING',
+        oauthTokenTruncated: oauthToken
+          ? truncateSecret(oauthToken)
+          : 'MISSING',
       },
       'Credential proxy using OAuth mode (no API key configured)',
     );
@@ -122,17 +125,24 @@ export function startCredentialProxy(
       req.on('data', (c) => chunks.push(c));
       req.on('end', () => {
         const body = Buffer.concat(chunks);
-        const bodyPreview = body.length > 200
-          ? body.slice(0, 200).toString() + '...'
-          : body.toString();
+        const bodyPreview =
+          body.length > 200
+            ? body.slice(0, 200).toString() + '...'
+            : body.toString();
 
         // Log ALL incoming request headers for debugging
         const incomingHeaders: Record<string, string> = {};
         for (const [key, value] of Object.entries(req.headers)) {
           if (key === 'x-api-key') {
-            incomingHeaders[key] = value && typeof value === 'string' ? truncateSecret(value) : 'absent';
+            incomingHeaders[key] =
+              value && typeof value === 'string'
+                ? truncateSecret(value)
+                : 'absent';
           } else if (key === 'authorization') {
-            incomingHeaders[key] = value && typeof value === 'string' ? truncateSecret(value) : 'absent';
+            incomingHeaders[key] =
+              value && typeof value === 'string'
+                ? truncateSecret(value)
+                : 'absent';
           } else {
             incomingHeaders[key] = String(value);
           }
@@ -177,7 +187,6 @@ export function startCredentialProxy(
 
           logger.info(
             {
-
               method: req.method,
               baseUrl: secrets.ANTHROPIC_BASE_URL,
               path: req.url,
@@ -234,9 +243,10 @@ export function startCredentialProxy(
               ? truncateSecret(secrets.ANTHROPIC_API_KEY)
               : 'not set';
           } else if (key === 'authorization') {
-            headersForLogging[key] = typeof value === 'string' && value.length > 8
-              ? truncateSecret(value)
-              : String(value);
+            headersForLogging[key] =
+              typeof value === 'string' && value.length > 8
+                ? truncateSecret(value)
+                : String(value);
           } else {
             headersForLogging[key] = String(value);
           }
@@ -270,9 +280,10 @@ export function startCredentialProxy(
             upRes.on('data', (chunk) => responseChunks.push(chunk));
             upRes.on('end', () => {
               const responseBody = Buffer.concat(responseChunks);
-              const responseBodyPreview = responseBody.length > 200
-                ? responseBody.slice(0, 200).toString() + '...'
-                : responseBody.toString();
+              const responseBodyPreview =
+                responseBody.length > 200
+                  ? responseBody.slice(0, 200).toString() + '...'
+                  : responseBody.toString();
 
               // Log upstream response status with full details
               logger.info(
@@ -330,10 +341,7 @@ export function startCredentialProxy(
     });
 
     server.on('error', (err) => {
-      logger.error(
-        { port, host, err },
-        'Credential proxy server error',
-      );
+      logger.error({ port, host, err }, 'Credential proxy server error');
       reject(err);
     });
   });

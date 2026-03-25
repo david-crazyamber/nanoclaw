@@ -1,16 +1,16 @@
-import type { OpenClawPluginApi } from "openclaw/plugin-sdk/plugin-entry";
-import { buildChannelConfigSchema } from "openclaw/plugin-sdk/channel-config-schema";
+import type { OpenClawPluginApi } from 'openclaw/plugin-sdk/plugin-entry';
+import { buildChannelConfigSchema } from 'openclaw/plugin-sdk/channel-config-schema';
 
-import { weixinPlugin } from "./src/channel.js";
-import { assertHostCompatibility } from "./src/compat.js";
-import { WeixinConfigSchema } from "./src/config/config-schema.js";
-import { registerWeixinCli } from "./src/log-upload.js";
-import { setWeixinRuntime } from "./src/runtime.js";
+import { weixinPlugin } from './src/channel.js';
+import { assertHostCompatibility } from './src/compat.js';
+import { WeixinConfigSchema } from './src/config/config-schema.js';
+import { registerWeixinCli } from './src/log-upload.js';
+import { setWeixinRuntime } from './src/runtime.js';
 
 export default {
-  id: "openclaw-weixin",
-  name: "Weixin",
-  description: "Weixin channel (getUpdates long-poll + sendMessage)",
+  id: 'openclaw-weixin',
+  name: 'Weixin',
+  description: 'Weixin channel (getUpdates long-poll + sendMessage)',
   configSchema: buildChannelConfigSchema(WeixinConfigSchema),
   register(api: OpenClawPluginApi) {
     // Fail-fast: reject incompatible host versions before any side-effects.
@@ -24,10 +24,13 @@ export default {
 
     // registrationMode exists in 2026.3.22+; skip heavy registrations in setup-only mode.
     const mode = (api as { registrationMode?: string }).registrationMode;
-    if (mode && mode !== "full") return;
+    if (mode && mode !== 'full') return;
 
-    api.registerCli(({ program, config }) => registerWeixinCli({ program, config }), {
-      commands: ["openclaw-weixin"],
-    });
+    api.registerCli(
+      ({ program, config }) => registerWeixinCli({ program, config }),
+      {
+        commands: ['openclaw-weixin'],
+      },
+    );
   },
 };

@@ -1,6 +1,6 @@
-import { z } from "zod";
+import { z } from 'zod';
 
-import { CDN_BASE_URL, DEFAULT_BASE_URL } from "../auth/accounts.js";
+import { CDN_BASE_URL, DEFAULT_BASE_URL } from '../auth/accounts.js';
 
 // ---------------------------------------------------------------------------
 // Zod config schema

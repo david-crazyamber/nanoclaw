@@ -7,25 +7,25 @@
  * When enabled, processOneMessage appends a timing summary after each
  * AI reply is delivered to the user.
  */
-import fs from "node:fs";
-import path from "node:path";
+import fs from 'node:fs';
+import path from 'node:path';
 
-import { resolveStateDir } from "../storage/state-dir.js";
-import { logger } from "../util/logger.js";
+import { resolveStateDir } from '../storage/state-dir.js';
+import { logger } from '../util/logger.js';
 
 interface DebugModeState {
   accounts: Record<string, boolean>;
 }
 
 function resolveDebugModePath(): string {
-  return path.join(resolveStateDir(), "openclaw-weixin", "debug-mode.json");
+  return path.join(resolveStateDir(), 'openclaw-weixin', 'debug-mode.json');
 }
 
 function loadState(): DebugModeState {
   try {
-    const raw = fs.readFileSync(resolveDebugModePath(), "utf-8");
+    const raw = fs.readFileSync(resolveDebugModePath(), 'utf-8');
     const parsed = JSON.parse(raw) as DebugModeState;
-    if (parsed && typeof parsed.accounts === "object") return parsed;
+    if (parsed && typeof parsed.accounts === 'object') return parsed;
   } catch {
     // missing or corrupt — start fresh
   }
@@ -35,7 +35,7 @@ function loadState(): DebugModeState {
 function saveState(state: DebugModeState): void {
   const filePath = resolveDebugModePath();
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  fs.writeFileSync(filePath, JSON.stringify(state, null, 2), "utf-8");
+  fs.writeFileSync(filePath, JSON.stringify(state, null, 2), 'utf-8');
 }
 
 /** Toggle debug mode for a bot account. Returns the new state. */

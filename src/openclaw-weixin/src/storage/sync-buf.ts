@@ -1,12 +1,12 @@
-import fs from "node:fs";
-import path from "node:path";
+import fs from 'node:fs';
+import path from 'node:path';
 
-import { deriveRawAccountId } from "../auth/accounts.js";
+import { deriveRawAccountId } from '../auth/accounts.js';
 
-import { resolveStateDir } from "./state-dir.js";
+import { resolveStateDir } from './state-dir.js';
 
 function resolveAccountsDir(): string {
-  return path.join(resolveStateDir(), "openclaw-weixin", "accounts");
+  return path.join(resolveStateDir(), 'openclaw-weixin', 'accounts');
 }
 
 /**
@@ -21,11 +21,11 @@ export function getSyncBufFilePath(accountId: string): string {
 function getLegacySyncBufDefaultJsonPath(): string {
   return path.join(
     resolveStateDir(),
-    "agents",
-    "default",
-    "sessions",
-    ".openclaw-weixin-sync",
-    "default.json",
+    'agents',
+    'default',
+    'sessions',
+    '.openclaw-weixin-sync',
+    'default.json',
   );
 }
 
@@ -35,9 +35,9 @@ export type SyncBufData = {
 
 function readSyncBufFile(filePath: string): string | undefined {
   try {
-    const raw = fs.readFileSync(filePath, "utf-8");
+    const raw = fs.readFileSync(filePath, 'utf-8');
     const data = JSON.parse(raw) as { get_updates_buf?: string };
-    if (typeof data.get_updates_buf === "string") {
+    if (typeof data.get_updates_buf === 'string') {
       return data.get_updates_buf;
     }
   } catch {
@@ -59,7 +59,7 @@ export function loadGetUpdatesBuf(filePath: string): string | undefined {
 
   // Compat: if given path uses a normalized accountId (e.g. "b0f5860fdecb-im-bot.sync.json"),
   // also try the old raw-ID filename (e.g. "b0f5860fdecb@im.bot.sync.json").
-  const accountId = path.basename(filePath, ".sync.json");
+  const accountId = path.basename(filePath, '.sync.json');
   const rawId = deriveRawAccountId(accountId);
   if (rawId) {
     const compatPath = path.join(resolveAccountsDir(), `${rawId}.sync.json`);
@@ -74,8 +74,15 @@ export function loadGetUpdatesBuf(filePath: string): string | undefined {
 /**
  * Persist get_updates_buf. Creates parent dir if needed.
  */
-export function saveGetUpdatesBuf(filePath: string, getUpdatesBuf: string): void {
+export function saveGetUpdatesBuf(
+  filePath: string,
+  getUpdatesBuf: string,
+): void {
   const dir = path.dirname(filePath);
   fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(filePath, JSON.stringify({ get_updates_buf: getUpdatesBuf }, null, 0), "utf-8");
+  fs.writeFileSync(
+    filePath,
+    JSON.stringify({ get_updates_buf: getUpdatesBuf }, null, 0),
+    'utf-8',
+  );
 }

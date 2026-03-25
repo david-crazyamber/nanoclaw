@@ -1,8 +1,8 @@
-import fs from "node:fs";
-import os from "node:os";
-import path from "node:path";
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 
-import { resolvePreferredOpenClawTmpDir } from "openclaw/plugin-sdk/infra-runtime";
+import { resolvePreferredOpenClawTmpDir } from 'openclaw/plugin-sdk/infra-runtime';
 
 /**
  * Plugin logger — writes JSON lines to the main openclaw log file:
@@ -11,11 +11,11 @@ import { resolvePreferredOpenClawTmpDir } from "openclaw/plugin-sdk/infra-runtim
  */
 
 const MAIN_LOG_DIR = resolvePreferredOpenClawTmpDir();
-const SUBSYSTEM = "gateway/channels/openclaw-weixin";
-const RUNTIME = "node";
+const SUBSYSTEM = 'gateway/channels/openclaw-weixin';
+const RUNTIME = 'node';
 const RUNTIME_VERSION = process.versions.node;
-const HOSTNAME = os.hostname() || "unknown";
-const PARENT_NAMES = ["openclaw"];
+const HOSTNAME = os.hostname() || 'unknown';
+const PARENT_NAMES = ['openclaw'];
 
 /** tslog-compatible level IDs (higher = more severe). */
 const LEVEL_IDS: Record<string, number> = {
@@ -27,7 +27,7 @@ const LEVEL_IDS: Record<string, number> = {
   FATAL: 6,
 };
 
-const DEFAULT_LOG_LEVEL = "INFO";
+const DEFAULT_LOG_LEVEL = 'INFO';
 
 function resolveMinLevel(): number {
   const env = process.env.OPENCLAW_LOG_LEVEL?.toUpperCase();
@@ -41,7 +41,9 @@ let minLevelId = resolveMinLevel();
 export function setLogLevel(level: string): void {
   const upper = level.toUpperCase();
   if (!(upper in LEVEL_IDS)) {
-    throw new Error(`Invalid log level: ${level}. Valid levels: ${Object.keys(LEVEL_IDS).join(", ")}`);
+    throw new Error(
+      `Invalid log level: ${level}. Valid levels: ${Object.keys(LEVEL_IDS).join(', ')}`,
+    );
   }
   minLevelId = LEVEL_IDS[upper];
 }
@@ -49,10 +51,10 @@ export function setLogLevel(level: string): void {
 /** Shift a Date into local time so toISOString() renders local clock digits. */
 function toLocalISO(now: Date): string {
   const offsetMs = -now.getTimezoneOffset() * 60_000;
-  const sign = offsetMs >= 0 ? "+" : "-";
+  const sign = offsetMs >= 0 ? '+' : '-';
   const abs = Math.abs(now.getTimezoneOffset());
-  const offStr = `${sign}${String(Math.floor(abs / 60)).padStart(2, "0")}:${String(abs % 60).padStart(2, "0")}`;
-  return new Date(now.getTime() + offsetMs).toISOString().replace("Z", offStr);
+  const offStr = `${sign}${String(Math.floor(abs / 60)).padStart(2, '0')}:${String(abs % 60).padStart(2, '0')}`;
+  return new Date(now.getTime() + offsetMs).toISOString().replace('Z', offStr);
 }
 
 function localDateKey(now: Date): string {
@@ -90,8 +92,8 @@ function writeLog(level: string, message: string, accountId?: string): void {
   const loggerName = buildLoggerName(accountId);
   const prefixedMessage = accountId ? `[${accountId}] ${message}` : message;
   const entry = JSON.stringify({
-    "0": loggerName,
-    "1": prefixedMessage,
+    '0': loggerName,
+    '1': prefixedMessage,
     _meta: {
       runtime: RUNTIME,
       runtimeVersion: RUNTIME_VERSION,
@@ -109,7 +111,7 @@ function writeLog(level: string, message: string, accountId?: string): void {
       fs.mkdirSync(MAIN_LOG_DIR, { recursive: true });
       logDirEnsured = true;
     }
-    fs.appendFileSync(resolveMainLogPath(), `${entry}\n`, "utf-8");
+    fs.appendFileSync(resolveMainLogPath(), `${entry}\n`, 'utf-8');
   } catch {
     // Best-effort; never block on logging failures.
   }
@@ -119,16 +121,16 @@ function writeLog(level: string, message: string, accountId?: string): void {
 function createLogger(accountId?: string): Logger {
   return {
     info(message: string): void {
-      writeLog("INFO", message, accountId);
+      writeLog('INFO', message, accountId);
     },
     debug(message: string): void {
-      writeLog("DEBUG", message, accountId);
+      writeLog('DEBUG', message, accountId);
     },
     warn(message: string): void {
-      writeLog("WARN", message, accountId);
+      writeLog('WARN', message, accountId);
     },
     error(message: string): void {
-      writeLog("ERROR", message, accountId);
+      writeLog('ERROR', message, accountId);
     },
     withAccount(id: string): Logger {
       return createLogger(id);

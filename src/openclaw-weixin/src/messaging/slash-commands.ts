@@ -5,11 +5,11 @@
  * - /echo <message>         直接回复消息（不经过 AI），并附带通道耗时统计
  * - /toggle-debug           开关 debug 模式，启用后每条 AI 回复追加全链路耗时
  */
-import type { WeixinApiOptions } from "../api/api.js";
-import { logger } from "../util/logger.js";
+import type { WeixinApiOptions } from '../api/api.js';
+import { logger } from '../util/logger.js';
 
-import { toggleDebugMode, isDebugMode } from "./debug-mode.js";
-import { sendMessageWeixin } from "./send.js";
+import { toggleDebugMode, isDebugMode } from './debug-mode.js';
+import { sendMessageWeixin } from './send.js';
 
 export interface SlashCommandResult {
   /** 是否是斜杠指令（true 表示已处理，不需要继续走 AI） */
@@ -27,7 +27,10 @@ export interface SlashCommandContext {
 }
 
 /** 发送回复消息 */
-async function sendReply(ctx: SlashCommandContext, text: string): Promise<void> {
+async function sendReply(
+  ctx: SlashCommandContext,
+  text: string,
+): Promise<void> {
   const opts: WeixinApiOptions & { contextToken?: string } = {
     baseUrl: ctx.baseUrl,
     token: ctx.token,
@@ -48,13 +51,13 @@ async function handleEcho(
     await sendReply(ctx, message);
   }
   const eventTs = eventTimestamp ?? 0;
-  const platformDelay = eventTs > 0 ? `${receivedAt - eventTs}ms` : "N/A";
+  const platformDelay = eventTs > 0 ? `${receivedAt - eventTs}ms` : 'N/A';
   const timing = [
-    "⏱ 通道耗时",
-    `├ 事件时间: ${eventTs > 0 ? new Date(eventTs).toISOString() : "N/A"}`,
+    '⏱ 通道耗时',
+    `├ 事件时间: ${eventTs > 0 ? new Date(eventTs).toISOString() : 'N/A'}`,
     `├ 平台→插件: ${platformDelay}`,
     `└ 插件处理: ${Date.now() - receivedAt}ms`,
-  ].join("\n");
+  ].join('\n');
   await sendReply(ctx, timing);
 }
 
@@ -70,29 +73,27 @@ export async function handleSlashCommand(
   eventTimestamp?: number,
 ): Promise<SlashCommandResult> {
   const trimmed = content.trim();
-  if (!trimmed.startsWith("/")) {
+  if (!trimmed.startsWith('/')) {
     return { handled: false };
   }
 
-  const spaceIdx = trimmed.indexOf(" ");
-  const command = spaceIdx === -1 ? trimmed.toLowerCase() : trimmed.slice(0, spaceIdx).toLowerCase();
-  const args = spaceIdx === -1 ? "" : trimmed.slice(spaceIdx + 1);
+  const spaceIdx = trimmed.indexOf(' ');
+  const command =
+    spaceIdx === -1
+      ? trimmed.toLowerCase()
+      : trimmed.slice(0, spaceIdx).toLowerCase();
+  const args = spaceIdx === -1 ? '' : trimmed.slice(spaceIdx + 1);
 
   logger.info(`[weixin] Slash command: ${command}, args: ${args.slice(0, 50)}`);
 
   try {
     switch (command) {
-      case "/echo":
+      case '/echo':
         await handleEcho(ctx, args, receivedAt, eventTimestamp);
         return { handled: true };
-      case "/toggle-debug": {
+      case '/toggle-debug': {
         const enabled = toggleDebugMode(ctx.accountId);
-        await sendReply(
-          ctx,
-          enabled
-            ? "Debug 模式已开启"
-            : "Debug 模式已关闭",
-        );
+        await sendReply(ctx, enabled ? 'Debug 模式已开启' : 'Debug 模式已关闭');
         return { handled: true };
       }
       default:

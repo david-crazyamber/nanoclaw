@@ -1,4 +1,4 @@
-import { logger } from "../util/logger.js";
+import { logger } from '../util/logger.js';
 
 const SESSION_PAUSE_DURATION_MS = 60 * 60 * 1000;
 

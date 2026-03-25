@@ -1,11 +1,11 @@
-import crypto from "node:crypto";
-import fs from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
+import crypto from 'node:crypto';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-import { loadConfigRouteTag } from "../auth/accounts.js";
-import { logger } from "../util/logger.js";
-import { redactBody, redactUrl } from "../util/redact.js";
+import { loadConfigRouteTag } from '../auth/accounts.js';
+import { logger } from '../util/logger.js';
+import { redactBody, redactUrl } from '../util/redact.js';
 
 import type {
   BaseInfo,
@@ -16,7 +16,7 @@ import type {
   SendMessageReq,
   SendTypingReq,
   GetConfigResp,
-} from "./types.js";
+} from './types.js';
 
 export type WeixinApiOptions = {
   baseUrl: string;
@@ -33,11 +33,13 @@ export type WeixinApiOptions = {
 function readChannelVersion(): string {
   try {
     const dir = path.dirname(fileURLToPath(import.meta.url));
-    const pkgPath = path.resolve(dir, "..", "..", "package.json");
-    const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf-8")) as { version?: string };
-    return pkg.version ?? "unknown";
+    const pkgPath = path.resolve(dir, '..', '..', 'package.json');
+    const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8')) as {
+      version?: string;
+    };
+    return pkg.version ?? 'unknown';
   } catch {
-    return "unknown";
+    return 'unknown';
   }
 }
 
@@ -56,21 +58,24 @@ const DEFAULT_API_TIMEOUT_MS = 15_000;
 const DEFAULT_CONFIG_TIMEOUT_MS = 10_000;
 
 function ensureTrailingSlash(url: string): string {
-  return url.endsWith("/") ? url : `${url}/`;
+  return url.endsWith('/') ? url : `${url}/`;
 }
 
 /** X-WECHAT-UIN header: random uint32 -> decimal string -> base64. */
 function randomWechatUin(): string {
   const uint32 = crypto.randomBytes(4).readUInt32BE(0);
-  return Buffer.from(String(uint32), "utf-8").toString("base64");
+  return Buffer.from(String(uint32), 'utf-8').toString('base64');
 }
 
-function buildHeaders(opts: { token?: string; body: string }): Record<string, string> {
+function buildHeaders(opts: {
+  token?: string;
+  body: string;
+}): Record<string, string> {
   const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    AuthorizationType: "ilink_bot_token",
-    "Content-Length": String(Buffer.byteLength(opts.body, "utf-8")),
-    "X-WECHAT-UIN": randomWechatUin(),
+    'Content-Type': 'application/json',
+    AuthorizationType: 'ilink_bot_token',
+    'Content-Length': String(Buffer.byteLength(opts.body, 'utf-8')),
+    'X-WECHAT-UIN': randomWechatUin(),
   };
   if (opts.token?.trim()) {
     headers.Authorization = `Bearer ${opts.token.trim()}`;
@@ -80,7 +85,7 @@ function buildHeaders(opts: { token?: string; body: string }): Record<string, st
     headers.SKRouteTag = routeTag;
   }
   logger.debug(
-    `requestHeaders: ${JSON.stringify({ ...headers, Authorization: headers.Authorization ? "Bearer ***" : undefined })}`,
+    `requestHeaders: ${JSON.stringify({ ...headers, Authorization: headers.Authorization ? 'Bearer ***' : undefined })}`,
   );
   return headers;
 }
@@ -100,20 +105,24 @@ async function apiFetch(params: {
   const base = ensureTrailingSlash(params.baseUrl);
   const url = new URL(params.endpoint, base);
   const hdrs = buildHeaders({ token: params.token, body: params.body });
-  logger.debug(`POST ${redactUrl(url.toString())} body=${redactBody(params.body)}`);
+  logger.debug(
+    `POST ${redactUrl(url.toString())} body=${redactBody(params.body)}`,
+  );
 
   const controller = new AbortController();
   const t = setTimeout(() => controller.abort(), params.timeoutMs);
   try {
     const res = await fetch(url.toString(), {
-      method: "POST",
+      method: 'POST',
       headers: hdrs,
       body: params.body,
       signal: controller.signal,
     });
     clearTimeout(t);
     const rawText = await res.text();
-    logger.debug(`${params.label} status=${res.status} raw=${redactBody(rawText)}`);
+    logger.debug(
+      `${params.label} status=${res.status} raw=${redactBody(rawText)}`,
+    );
     if (!res.ok) {
       throw new Error(`${params.label} ${res.status}: ${rawText}`);
     }
@@ -141,21 +150,23 @@ export async function getUpdates(
   try {
     const rawText = await apiFetch({
       baseUrl: params.baseUrl,
-      endpoint: "ilink/bot/getupdates",
+      endpoint: 'ilink/bot/getupdates',
       body: JSON.stringify({
-        get_updates_buf: params.get_updates_buf ?? "",
+        get_updates_buf: params.get_updates_buf ?? '',
         base_info: buildBaseInfo(),
       }),
       token: params.token,
       timeoutMs: timeout,
-      label: "getUpdates",
+      label: 'getUpdates',
     });
     const resp: GetUpdatesResp = JSON.parse(rawText);
     return resp;
   } catch (err) {
     // Long-poll timeout is normal; return empty response so caller can retry
-    if (err instanceof Error && err.name === "AbortError") {
-      logger.debug(`getUpdates: client-side timeout after ${timeout}ms, returning empty response`);
+    if (err instanceof Error && err.name === 'AbortError') {
+      logger.debug(
+        `getUpdates: client-side timeout after ${timeout}ms, returning empty response`,
+      );
       return { ret: 0, msgs: [], get_updates_buf: params.get_updates_buf };
     }
     throw err;
@@ -168,7 +179,7 @@ export async function getUploadUrl(
 ): Promise<GetUploadUrlResp> {
   const rawText = await apiFetch({
     baseUrl: params.baseUrl,
-    endpoint: "ilink/bot/getuploadurl",
+    endpoint: 'ilink/bot/getuploadurl',
     body: JSON.stringify({
       filekey: params.filekey,
       media_type: params.media_type,
@@ -185,7 +196,7 @@ export async function getUploadUrl(
     }),
     token: params.token,
     timeoutMs: params.timeoutMs ?? DEFAULT_API_TIMEOUT_MS,
-    label: "getUploadUrl",
+    label: 'getUploadUrl',
   });
   const resp: GetUploadUrlResp = JSON.parse(rawText);
   return resp;
@@ -197,11 +208,11 @@ export async function sendMessage(
 ): Promise<void> {
   await apiFetch({
     baseUrl: params.baseUrl,
-    endpoint: "ilink/bot/sendmessage",
+    endpoint: 'ilink/bot/sendmessage',
     body: JSON.stringify({ ...params.body, base_info: buildBaseInfo() }),
     token: params.token,
     timeoutMs: params.timeoutMs ?? DEFAULT_API_TIMEOUT_MS,
-    label: "sendMessage",
+    label: 'sendMessage',
   });
 }
 
@@ -211,7 +222,7 @@ export async function getConfig(
 ): Promise<GetConfigResp> {
   const rawText = await apiFetch({
     baseUrl: params.baseUrl,
-    endpoint: "ilink/bot/getconfig",
+    endpoint: 'ilink/bot/getconfig',
     body: JSON.stringify({
       ilink_user_id: params.ilinkUserId,
       context_token: params.contextToken,
@@ -219,7 +230,7 @@ export async function getConfig(
     }),
     token: params.token,
     timeoutMs: params.timeoutMs ?? DEFAULT_CONFIG_TIMEOUT_MS,
-    label: "getConfig",
+    label: 'getConfig',
   });
   const resp: GetConfigResp = JSON.parse(rawText);
   return resp;
@@ -231,10 +242,10 @@ export async function sendTyping(
 ): Promise<void> {
   await apiFetch({
     baseUrl: params.baseUrl,
-    endpoint: "ilink/bot/sendtyping",
+    endpoint: 'ilink/bot/sendtyping',
     body: JSON.stringify({ ...params.body, base_info: buildBaseInfo() }),
     token: params.token,
     timeoutMs: params.timeoutMs ?? DEFAULT_CONFIG_TIMEOUT_MS,
-    label: "sendTyping",
+    label: 'sendTyping',
   });
 }

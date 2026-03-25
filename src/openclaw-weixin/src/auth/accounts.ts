@@ -1,17 +1,16 @@
-import fs from "node:fs";
-import path from "node:path";
+import fs from 'node:fs';
+import path from 'node:path';
 
-import { normalizeAccountId } from "openclaw/plugin-sdk/account-id";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/core";
+import { normalizeAccountId } from 'openclaw/plugin-sdk/account-id';
+import type { OpenClawConfig } from 'openclaw/plugin-sdk/core';
 
-import { getWeixinRuntime } from "../runtime.js";
-import { resolveStateDir } from "../storage/state-dir.js";
-import { resolveFrameworkAllowFromPath } from "./pairing.js";
-import { logger } from "../util/logger.js";
+import { getWeixinRuntime } from '../runtime.js';
+import { resolveStateDir } from '../storage/state-dir.js';
+import { resolveFrameworkAllowFromPath } from './pairing.js';
+import { logger } from '../util/logger.js';
 
-export const DEFAULT_BASE_URL = "https://ilinkai.weixin.qq.com";
-export const CDN_BASE_URL = "https://novac2c.cdn.weixin.qq.com/c2c";
-
+export const DEFAULT_BASE_URL = 'https://ilinkai.weixin.qq.com';
+export const CDN_BASE_URL = 'https://novac2c.cdn.weixin.qq.com/c2c';
 
 // ---------------------------------------------------------------------------
 // Account ID compatibility (legacy raw ID → normalized ID)
@@ -24,10 +23,10 @@ export const CDN_BASE_URL = "https://novac2c.cdn.weixin.qq.com/c2c";
  * e.g. "b0f5860fdecb-im-bot" → "b0f5860fdecb@im.bot"
  */
 export function deriveRawAccountId(normalizedId: string): string | undefined {
-  if (normalizedId.endsWith("-im-bot")) {
+  if (normalizedId.endsWith('-im-bot')) {
     return `${normalizedId.slice(0, -7)}@im.bot`;
   }
-  if (normalizedId.endsWith("-im-wechat")) {
+  if (normalizedId.endsWith('-im-wechat')) {
     return `${normalizedId.slice(0, -10)}@im.wechat`;
   }
   return undefined;
@@ -38,11 +37,11 @@ export function deriveRawAccountId(normalizedId: string): string | undefined {
 // ---------------------------------------------------------------------------
 
 function resolveWeixinStateDir(): string {
-  return path.join(resolveStateDir(), "openclaw-weixin");
+  return path.join(resolveStateDir(), 'openclaw-weixin');
 }
 
 function resolveAccountIndexPath(): string {
-  return path.join(resolveWeixinStateDir(), "accounts.json");
+  return path.join(resolveWeixinStateDir(), 'accounts.json');
 }
 
 /** Returns all accountIds registered via QR login. */
@@ -50,10 +49,12 @@ export function listIndexedWeixinAccountIds(): string[] {
   const filePath = resolveAccountIndexPath();
   try {
     if (!fs.existsSync(filePath)) return [];
-    const raw = fs.readFileSync(filePath, "utf-8");
+    const raw = fs.readFileSync(filePath, 'utf-8');
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
-    return parsed.filter((id): id is string => typeof id === "string" && id.trim() !== "");
+    return parsed.filter(
+      (id): id is string => typeof id === 'string' && id.trim() !== '',
+    );
   } catch {
     return [];
   }
@@ -68,7 +69,11 @@ export function registerWeixinAccountId(accountId: string): void {
   if (existing.includes(accountId)) return;
 
   const updated = [...existing, accountId];
-  fs.writeFileSync(resolveAccountIndexPath(), JSON.stringify(updated, null, 2), "utf-8");
+  fs.writeFileSync(
+    resolveAccountIndexPath(),
+    JSON.stringify(updated, null, 2),
+    'utf-8',
+  );
 }
 
 /** Remove accountId from the persistent index. */
@@ -76,7 +81,11 @@ export function unregisterWeixinAccountId(accountId: string): void {
   const existing = listIndexedWeixinAccountIds();
   const updated = existing.filter((id) => id !== accountId);
   if (updated.length !== existing.length) {
-    fs.writeFileSync(resolveAccountIndexPath(), JSON.stringify(updated, null, 2), "utf-8");
+    fs.writeFileSync(
+      resolveAccountIndexPath(),
+      JSON.stringify(updated, null, 2),
+      'utf-8',
+    );
   }
 }
 
@@ -98,7 +107,9 @@ export function clearStaleAccountsForUserId(
     if (id === currentAccountId) continue;
     const data = loadWeixinAccount(id);
     if (data?.userId?.trim() === userId) {
-      logger.info(`clearStaleAccountsForUserId: removing stale account=${id} (same userId=${userId})`);
+      logger.info(
+        `clearStaleAccountsForUserId: removing stale account=${id} (same userId=${userId})`,
+      );
       onClearContextTokens?.(id);
       clearWeixinAccount(id);
       unregisterWeixinAccountId(id);
@@ -120,7 +131,7 @@ export type WeixinAccountData = {
 };
 
 function resolveAccountsDir(): string {
-  return path.join(resolveWeixinStateDir(), "accounts");
+  return path.join(resolveWeixinStateDir(), 'accounts');
 }
 
 function resolveAccountPath(accountId: string): string {
@@ -131,12 +142,17 @@ function resolveAccountPath(accountId: string): string {
  * Legacy single-file token: `credentials/openclaw-weixin/credentials.json` (pre per-account files).
  */
 function loadLegacyToken(): string | undefined {
-  const legacyPath = path.join(resolveStateDir(), "credentials", "openclaw-weixin", "credentials.json");
+  const legacyPath = path.join(
+    resolveStateDir(),
+    'credentials',
+    'openclaw-weixin',
+    'credentials.json',
+  );
   try {
     if (!fs.existsSync(legacyPath)) return undefined;
-    const raw = fs.readFileSync(legacyPath, "utf-8");
+    const raw = fs.readFileSync(legacyPath, 'utf-8');
     const parsed = JSON.parse(raw) as { token?: string };
-    return typeof parsed.token === "string" ? parsed.token : undefined;
+    return typeof parsed.token === 'string' ? parsed.token : undefined;
   } catch {
     return undefined;
   }
@@ -145,7 +161,9 @@ function loadLegacyToken(): string | undefined {
 function readAccountFile(filePath: string): WeixinAccountData | null {
   try {
     if (fs.existsSync(filePath)) {
-      return JSON.parse(fs.readFileSync(filePath, "utf-8")) as WeixinAccountData;
+      return JSON.parse(
+        fs.readFileSync(filePath, 'utf-8'),
+      ) as WeixinAccountData;
     }
   } catch {
     // ignore
@@ -203,7 +221,7 @@ export function saveWeixinAccount(
   };
 
   const filePath = resolveAccountPath(accountId);
-  fs.writeFileSync(filePath, JSON.stringify(data, null, 2), "utf-8");
+  fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8');
   try {
     fs.chmodSync(filePath, 0o600);
   } catch {
@@ -246,7 +264,7 @@ export function clearWeixinAccount(accountId: string): void {
 function resolveConfigPath(): string {
   const envPath = process.env.OPENCLAW_CONFIG?.trim();
   if (envPath) return envPath;
-  return path.join(resolveStateDir(), "openclaw.json");
+  return path.join(resolveStateDir(), 'openclaw.json');
 }
 
 /**
@@ -262,11 +280,15 @@ function loadRouteTagSection(): Record<string, unknown> | null {
   if (cachedRouteTagSection !== undefined) return cachedRouteTagSection;
   try {
     const configPath = resolveConfigPath();
-    if (!fs.existsSync(configPath)) { cachedRouteTagSection = null; return null; }
-    const raw = fs.readFileSync(configPath, "utf-8");
+    if (!fs.existsSync(configPath)) {
+      cachedRouteTagSection = null;
+      return null;
+    }
+    const raw = fs.readFileSync(configPath, 'utf-8');
     const cfg = JSON.parse(raw) as Record<string, unknown>;
     const channels = cfg.channels as Record<string, unknown> | undefined;
-    const section = (channels?.["openclaw-weixin"] as Record<string, unknown>) ?? null;
+    const section =
+      (channels?.['openclaw-weixin'] as Record<string, unknown>) ?? null;
     cachedRouteTagSection = section;
     return section;
   } catch {
@@ -279,13 +301,15 @@ export function loadConfigRouteTag(accountId?: string): string | undefined {
   const section = loadRouteTagSection();
   if (!section) return undefined;
   if (accountId) {
-    const accounts = section.accounts as Record<string, Record<string, unknown>> | undefined;
+    const accounts = section.accounts as
+      | Record<string, Record<string, unknown>>
+      | undefined;
     const tag = accounts?.[accountId]?.routeTag;
-    if (typeof tag === "number") return String(tag);
-    if (typeof tag === "string" && tag.trim()) return tag.trim();
+    if (typeof tag === 'number') return String(tag);
+    if (typeof tag === 'string' && tag.trim()) return tag.trim();
   }
-  if (typeof section.routeTag === "number") return String(section.routeTag);
-  return typeof section.routeTag === "string" && section.routeTag.trim()
+  if (typeof section.routeTag === 'number') return String(section.routeTag);
+  return typeof section.routeTag === 'string' && section.routeTag.trim()
     ? section.routeTag.trim()
     : undefined;
 }
@@ -296,25 +320,35 @@ export function loadConfigRouteTag(accountId?: string): string | undefined {
  */
 export async function triggerWeixinChannelReload(): Promise<void> {
   try {
-    const { loadConfig, writeConfigFile } = await import("openclaw/plugin-sdk/config-runtime");
+    const { loadConfig, writeConfigFile } =
+      await import('openclaw/plugin-sdk/config-runtime');
     const cfg = loadConfig();
     const channels = (cfg.channels ?? {}) as Record<string, unknown>;
-    if (!channels["openclaw-weixin"] || Object.keys(channels["openclaw-weixin"] as Record<string, unknown>).every((k) => k === "enabled")) {
+    if (
+      !channels['openclaw-weixin'] ||
+      Object.keys(channels['openclaw-weixin'] as Record<string, unknown>).every(
+        (k) => k === 'enabled',
+      )
+    ) {
       const updated: OpenClawConfig = {
         ...cfg,
         channels: {
           ...channels,
-          "openclaw-weixin": {
-            ...(channels["openclaw-weixin"] as Record<string, unknown> ?? {}),
+          'openclaw-weixin': {
+            ...((channels['openclaw-weixin'] as Record<string, unknown>) ?? {}),
             accounts: {},
           },
         },
       };
       await writeConfigFile(updated);
-      logger.info("triggerWeixinChannelReload: wrote channel config to openclaw.json");
+      logger.info(
+        'triggerWeixinChannelReload: wrote channel config to openclaw.json',
+      );
     }
   } catch (err) {
-    logger.warn(`triggerWeixinChannelReload: failed to update config: ${String(err)}`);
+    logger.warn(
+      `triggerWeixinChannelReload: failed to update config: ${String(err)}`,
+    );
   }
 }
 
@@ -357,15 +391,18 @@ export function resolveWeixinAccount(
 ): ResolvedWeixinAccount {
   const raw = accountId?.trim();
   if (!raw) {
-    throw new Error("weixin: accountId is required (no default account)");
+    throw new Error('weixin: accountId is required (no default account)');
   }
   const id = normalizeAccountId(raw);
-  const section = cfg.channels?.["openclaw-weixin"] as WeixinSectionConfig | undefined;
-  const accountCfg: WeixinAccountConfig = section?.accounts?.[id] ?? section ?? {};
+  const section = cfg.channels?.['openclaw-weixin'] as
+    | WeixinSectionConfig
+    | undefined;
+  const accountCfg: WeixinAccountConfig =
+    section?.accounts?.[id] ?? section ?? {};
 
   const accountData = loadWeixinAccount(id);
   const token = accountData?.token?.trim() || undefined;
-  const stateBaseUrl = accountData?.baseUrl?.trim() || "";
+  const stateBaseUrl = accountData?.baseUrl?.trim() || '';
 
   return {
     accountId: id,

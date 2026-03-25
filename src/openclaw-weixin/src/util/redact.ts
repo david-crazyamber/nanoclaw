@@ -6,7 +6,7 @@ const DEFAULT_TOKEN_PREFIX_LEN = 6;
  * Returns `""` for empty/undefined input.
  */
 export function truncate(s: string | undefined, max: number): string {
-  if (!s) return "";
+  if (!s) return '';
   if (s.length <= max) return s;
   return `${s.slice(0, max)}…(len=${s.length})`;
 }
@@ -15,21 +15,28 @@ export function truncate(s: string | undefined, max: number): string {
  * Redact a token/secret: show only the first few chars + total length.
  * Returns `"(none)"` when absent.
  */
-export function redactToken(token: string | undefined, prefixLen = DEFAULT_TOKEN_PREFIX_LEN): string {
-  if (!token) return "(none)";
+export function redactToken(
+  token: string | undefined,
+  prefixLen = DEFAULT_TOKEN_PREFIX_LEN,
+): string {
+  if (!token) return '(none)';
   if (token.length <= prefixLen) return `****(len=${token.length})`;
   return `${token.slice(0, prefixLen)}…(len=${token.length})`;
 }
 
 /** Field names whose values should be masked in logged JSON bodies. */
-const SENSITIVE_FIELDS = /\b(context_token|bot_token|token|authorization|Authorization)\b/;
+const SENSITIVE_FIELDS =
+  /\b(context_token|bot_token|token|authorization|Authorization)\b/;
 
 /**
  * Truncate a JSON body string to `maxLen` chars for safe logging.
  * Redacts known sensitive fields before truncating.
  */
-export function redactBody(body: string | undefined, maxLen = DEFAULT_BODY_MAX_LEN): string {
-  if (!body) return "(empty)";
+export function redactBody(
+  body: string | undefined,
+  maxLen = DEFAULT_BODY_MAX_LEN,
+): string {
+  if (!body) return '(empty)';
   // Mask values of known sensitive JSON keys: "key":"value" → "key":"<redacted>"
   const redacted = body.replace(
     /"(context_token|bot_token|token|authorization|Authorization)"\s*:\s*"[^"]*"/g,

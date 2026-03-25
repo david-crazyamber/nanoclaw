@@ -1,9 +1,8 @@
-import fs from "node:fs/promises";
-import path from "node:path";
+import fs from 'node:fs/promises';
+import path from 'node:path';
 
-import type { OpenClawConfig } from "openclaw/plugin-sdk/core";
-import { resolvePreferredOpenClawTmpDir } from "openclaw/plugin-sdk/infra-runtime";
-
+import type { OpenClawConfig } from 'openclaw/plugin-sdk/core';
+import { resolvePreferredOpenClawTmpDir } from 'openclaw/plugin-sdk/infra-runtime';
 
 /** Minimal subset of commander's Command used by registerWeixinCli. */
 type CliCommand = {
@@ -47,45 +46,60 @@ function mainLogDir(): string {
 }
 
 function getConfiguredUploadUrl(config: OpenClawConfig): string | undefined {
-  const section = config.channels?.["openclaw-weixin"] as { logUploadUrl?: string } | undefined;
+  const section = config.channels?.['openclaw-weixin'] as
+    | { logUploadUrl?: string }
+    | undefined;
   return section?.logUploadUrl;
 }
 
 /** Register the `openclaw openclaw-weixin` CLI subcommands. */
-export function registerWeixinCli(params: { program: CliCommand; config: OpenClawConfig }): void {
+export function registerWeixinCli(params: {
+  program: CliCommand;
+  config: OpenClawConfig;
+}): void {
   const { program, config } = params;
 
-  const root = program.command("openclaw-weixin").description("Weixin channel utilities");
+  const root = program
+    .command('openclaw-weixin')
+    .description('Weixin channel utilities');
 
   root
-    .command("uninstall")
-    .description("Uninstall the Weixin plugin (cleans up channel config automatically)")
+    .command('uninstall')
+    .description(
+      'Uninstall the Weixin plugin (cleans up channel config automatically)',
+    )
     .action(async () => {
       // 1. Remove channels.openclaw-weixin from config
-      const { loadConfig, writeConfigFile } = await import("openclaw/plugin-sdk/config-runtime");
+      const { loadConfig, writeConfigFile } =
+        await import('openclaw/plugin-sdk/config-runtime');
       const cfg = loadConfig();
       const channels = (cfg.channels ?? {}) as Record<string, unknown>;
-      if (channels["openclaw-weixin"]) {
-        delete channels["openclaw-weixin"];
+      if (channels['openclaw-weixin']) {
+        delete channels['openclaw-weixin'];
         await writeConfigFile({ ...cfg, channels });
-        console.log("[weixin] Cleaned up channel config.");
+        console.log('[weixin] Cleaned up channel config.');
       }
       // 2. Run the actual uninstall
-      const { execSync } = await import("node:child_process");
+      const { execSync } = await import('node:child_process');
       try {
-        execSync("openclaw plugins uninstall openclaw-weixin", { stdio: "inherit" });
+        execSync('openclaw plugins uninstall openclaw-weixin', {
+          stdio: 'inherit',
+        });
       } catch {
         // uninstall command handles its own error output
       }
     });
 
   root
-    .command("logs-upload")
-    .description("Upload a Weixin log file to a remote URL via HTTP POST")
-    .option("--url <url>", "Remote URL to POST the log file to (overrides config)")
+    .command('logs-upload')
+    .description('Upload a Weixin log file to a remote URL via HTTP POST')
     .option(
-      "--file <file>",
-      "Log file to upload: full filename or 8-digit date YYYYMMDD (default: today)",
+      '--url <url>',
+      'Remote URL to POST the log file to (overrides config)',
+    )
+    .option(
+      '--file <file>',
+      'Log file to upload: full filename or 8-digit date YYYYMMDD (default: today)',
     )
     .action(async (options: { url?: string; file?: string }) => {
       const uploadUrl = options.url ?? getConfiguredUploadUrl(config);
@@ -99,30 +113,40 @@ export function registerWeixinCli(params: { program: CliCommand; config: OpenCla
       const logDir = mainLogDir();
       const rawFile = options.file ?? currentDayLogFileName();
       const fileName = resolveLogFileName(rawFile);
-      const filePath = path.isAbsolute(fileName) ? fileName : path.join(logDir, fileName);
+      const filePath = path.isAbsolute(fileName)
+        ? fileName
+        : path.join(logDir, fileName);
 
       let content: Buffer;
       try {
         content = await fs.readFile(filePath);
       } catch (err) {
-        console.error(`[weixin] Failed to read log file: ${filePath}\n  ${String(err)}`);
+        console.error(
+          `[weixin] Failed to read log file: ${filePath}\n  ${String(err)}`,
+        );
         process.exit(1);
       }
 
-      console.log(`[weixin] Uploading ${filePath} (${content.length} bytes) to ${uploadUrl} ...`);
+      console.log(
+        `[weixin] Uploading ${filePath} (${content.length} bytes) to ${uploadUrl} ...`,
+      );
 
       const formData = new FormData();
-      formData.append("file", new Blob([new Uint8Array(content)], { type: "text/plain" }), fileName);
+      formData.append(
+        'file',
+        new Blob([new Uint8Array(content)], { type: 'text/plain' }),
+        fileName,
+      );
 
       let res: Response;
       try {
-        res = await fetch(uploadUrl, { method: "POST", body: formData });
+        res = await fetch(uploadUrl, { method: 'POST', body: formData });
       } catch (err) {
         console.error(`[weixin] Upload request failed: ${String(err)}`);
         process.exit(1);
       }
 
-      const responseBody = await res.text().catch(() => "");
+      const responseBody = await res.text().catch(() => '');
       if (!res.ok) {
         console.error(
           `[weixin] Upload failed: HTTP ${res.status} ${res.statusText}\n  ${responseBody}`,
@@ -131,7 +155,7 @@ export function registerWeixinCli(params: { program: CliCommand; config: OpenCla
       }
 
       console.log(`[weixin] Upload succeeded (HTTP ${res.status})`);
-      const fileid = res.headers.get("fileid");
+      const fileid = res.headers.get('fileid');
       if (fileid) {
         console.log(`fileid: ${fileid}`);
       } else {
@@ -140,10 +164,10 @@ export function registerWeixinCli(params: { program: CliCommand; config: OpenCla
         res.headers.forEach((value, key) => {
           headers[key] = value;
         });
-        console.log("headers:", JSON.stringify(headers, null, 2));
+        console.log('headers:', JSON.stringify(headers, null, 2));
       }
       if (responseBody) {
-        console.log("body:", responseBody);
+        console.log('body:', responseBody);
       }
     });
 }

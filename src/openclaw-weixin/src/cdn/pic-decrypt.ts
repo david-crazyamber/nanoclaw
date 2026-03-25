@@ -1,6 +1,6 @@
-import { decryptAesEcb } from "./aes-ecb.js";
-import { buildCdnDownloadUrl } from "./cdn-url.js";
-import { logger } from "../util/logger.js";
+import { decryptAesEcb } from './aes-ecb.js';
+import { buildCdnDownloadUrl } from './cdn-url.js';
+import { logger } from '../util/logger.js';
 
 /**
  * Download raw bytes from the CDN (no decryption).
@@ -11,7 +11,9 @@ async function fetchCdnBytes(url: string, label: string): Promise<Buffer> {
     res = await fetch(url);
   } catch (err) {
     const cause =
-      (err as NodeJS.ErrnoException).cause ?? (err as NodeJS.ErrnoException).code ?? "(no cause)";
+      (err as NodeJS.ErrnoException).cause ??
+      (err as NodeJS.ErrnoException).code ??
+      '(no cause)';
     logger.error(
       `${label}: fetch network error url=${url} err=${String(err)} cause=${String(cause)}`,
     );
@@ -19,7 +21,7 @@ async function fetchCdnBytes(url: string, label: string): Promise<Buffer> {
   }
   logger.debug(`${label}: response status=${res.status} ok=${res.ok}`);
   if (!res.ok) {
-    const body = await res.text().catch(() => "(unreadable)");
+    const body = await res.text().catch(() => '(unreadable)');
     const msg = `${label}: CDN download ${res.status} ${res.statusText} body=${body}`;
     logger.error(msg);
     throw new Error(msg);
@@ -38,13 +40,16 @@ async function fetchCdnBytes(url: string, label: string): Promise<Buffer> {
  * then be parsed as hex to recover the actual 16-byte key.
  */
 function parseAesKey(aesKeyBase64: string, label: string): Buffer {
-  const decoded = Buffer.from(aesKeyBase64, "base64");
+  const decoded = Buffer.from(aesKeyBase64, 'base64');
   if (decoded.length === 16) {
     return decoded;
   }
-  if (decoded.length === 32 && /^[0-9a-fA-F]{32}$/.test(decoded.toString("ascii"))) {
+  if (
+    decoded.length === 32 &&
+    /^[0-9a-fA-F]{32}$/.test(decoded.toString('ascii'))
+  ) {
     // hex-encoded key: base64 → hex string → raw bytes
-    return Buffer.from(decoded.toString("ascii"), "hex");
+    return Buffer.from(decoded.toString('ascii'), 'hex');
   }
   const msg = `${label}: aes_key must decode to 16 raw bytes or 32-char hex string, got ${decoded.length} bytes (base64="${aesKeyBase64}")`;
   logger.error(msg);
@@ -65,7 +70,9 @@ export async function downloadAndDecryptBuffer(
   const url = buildCdnDownloadUrl(encryptedQueryParam, cdnBaseUrl);
   logger.debug(`${label}: fetching url=${url}`);
   const encrypted = await fetchCdnBytes(url, label);
-  logger.debug(`${label}: downloaded ${encrypted.byteLength} bytes, decrypting`);
+  logger.debug(
+    `${label}: downloaded ${encrypted.byteLength} bytes, decrypting`,
+  );
   const decrypted = decryptAesEcb(encrypted, key);
   logger.debug(`${label}: decrypted ${decrypted.length} bytes`);
   return decrypted;

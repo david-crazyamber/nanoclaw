@@ -1,11 +1,11 @@
-import fs from "node:fs";
-import path from "node:path";
+import fs from 'node:fs';
+import path from 'node:path';
 
-import { logger } from "../util/logger.js";
-import { generateId } from "../util/random.js";
-import type { WeixinMessage, MessageItem } from "../api/types.js";
-import { MessageItemType } from "../api/types.js";
-import { resolveStateDir } from "../storage/state-dir.js";
+import { logger } from '../util/logger.js';
+import { generateId } from '../util/random.js';
+import type { WeixinMessage, MessageItem } from '../api/types.js';
+import { MessageItemType } from '../api/types.js';
+import { resolveStateDir } from '../storage/state-dir.js';
 
 // ---------------------------------------------------------------------------
 // Context token store (in-process cache + disk persistence)
@@ -29,8 +29,8 @@ function contextTokenKey(accountId: string, userId: string): string {
 function resolveContextTokenFilePath(accountId: string): string {
   return path.join(
     resolveStateDir(),
-    "openclaw-weixin",
-    "accounts",
+    'openclaw-weixin',
+    'accounts',
     `${accountId}.context-tokens.json`,
   );
 }
@@ -48,9 +48,11 @@ function persistContextTokens(accountId: string): void {
   try {
     const dir = path.dirname(filePath);
     fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(filePath, JSON.stringify(tokens, null, 0), "utf-8");
+    fs.writeFileSync(filePath, JSON.stringify(tokens, null, 0), 'utf-8');
   } catch (err) {
-    logger.warn(`persistContextTokens: failed to write ${filePath}: ${String(err)}`);
+    logger.warn(
+      `persistContextTokens: failed to write ${filePath}: ${String(err)}`,
+    );
   }
 }
 
@@ -62,18 +64,22 @@ export function restoreContextTokens(accountId: string): void {
   const filePath = resolveContextTokenFilePath(accountId);
   try {
     if (!fs.existsSync(filePath)) return;
-    const raw = fs.readFileSync(filePath, "utf-8");
+    const raw = fs.readFileSync(filePath, 'utf-8');
     const tokens = JSON.parse(raw) as Record<string, string>;
     let count = 0;
     for (const [userId, token] of Object.entries(tokens)) {
-      if (typeof token === "string" && token) {
+      if (typeof token === 'string' && token) {
         contextTokenStore.set(contextTokenKey(accountId, userId), token);
         count++;
       }
     }
-    logger.info(`restoreContextTokens: restored ${count} tokens for account=${accountId}`);
+    logger.info(
+      `restoreContextTokens: restored ${count} tokens for account=${accountId}`,
+    );
   } catch (err) {
-    logger.warn(`restoreContextTokens: failed to read ${filePath}: ${String(err)}`);
+    logger.warn(
+      `restoreContextTokens: failed to read ${filePath}: ${String(err)}`,
+    );
   }
 }
 
@@ -89,13 +95,21 @@ export function clearContextTokensForAccount(accountId: string): void {
   try {
     if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
   } catch (err) {
-    logger.warn(`clearContextTokensForAccount: failed to remove ${filePath}: ${String(err)}`);
+    logger.warn(
+      `clearContextTokensForAccount: failed to remove ${filePath}: ${String(err)}`,
+    );
   }
-  logger.info(`clearContextTokensForAccount: cleared tokens for account=${accountId}`);
+  logger.info(
+    `clearContextTokensForAccount: cleared tokens for account=${accountId}`,
+  );
 }
 
 /** Store a context token for a given account+user pair (memory + disk). */
-export function setContextToken(accountId: string, userId: string, token: string): void {
+export function setContextToken(
+  accountId: string,
+  userId: string,
+  token: string,
+): void {
   const k = contextTokenKey(accountId, userId);
   logger.debug(`setContextToken: key=${k}`);
   contextTokenStore.set(k, token);
@@ -103,7 +117,10 @@ export function setContextToken(accountId: string, userId: string, token: string
 }
 
 /** Retrieve the cached context token for a given account+user pair. */
-export function getContextToken(accountId: string, userId: string): string | undefined {
+export function getContextToken(
+  accountId: string,
+  userId: string,
+): string | undefined {
   const k = contextTokenKey(accountId, userId);
   const val = contextTokenStore.get(k);
   logger.debug(
@@ -124,7 +141,9 @@ export function findAccountIdsByContextToken(
   accountIds: string[],
   userId: string,
 ): string[] {
-  return accountIds.filter((id) => contextTokenStore.has(contextTokenKey(id, userId)));
+  return accountIds.filter((id) =>
+    contextTokenStore.has(contextTokenKey(id, userId)),
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -132,7 +151,7 @@ export function findAccountIdsByContextToken(
 // ---------------------------------------------------------------------------
 
 function generateMessageSid(): string {
-  return generateId("openclaw-weixin");
+  return generateId('openclaw-weixin');
 }
 
 /** Inbound context passed to the OpenClaw core pipeline (matches MsgContext shape). */
@@ -141,12 +160,12 @@ export type WeixinMsgContext = {
   From: string;
   To: string;
   AccountId: string;
-  OriginatingChannel: "openclaw-weixin";
+  OriginatingChannel: 'openclaw-weixin';
   OriginatingTo: string;
   MessageSid: string;
   Timestamp?: number;
-  Provider: "openclaw-weixin";
-  ChatType: "direct";
+  Provider: 'openclaw-weixin';
+  ChatType: 'direct';
   /** Set by monitor after resolveAgentRoute so dispatchReplyFromConfig uses the correct session. */
   SessionKey?: string;
   context_token?: string;
@@ -170,7 +189,7 @@ export function isMediaItem(item: MessageItem): boolean {
 }
 
 function bodyFromItemList(itemList?: MessageItem[]): string {
-  if (!itemList?.length) return "";
+  if (!itemList?.length) return '';
   for (const item of itemList) {
     if (item.type === MessageItemType.TEXT && item.text_item?.text != null) {
       const text = String(item.text_item.text);
@@ -186,14 +205,14 @@ function bodyFromItemList(itemList?: MessageItem[]): string {
         if (refBody) parts.push(refBody);
       }
       if (!parts.length) return text;
-      return `[引用: ${parts.join(" | ")}]\n${text}`;
+      return `[引用: ${parts.join(' | ')}]\n${text}`;
     }
     // 语音转文字：如果语音消息有 text 字段，直接使用文字内容
     if (item.type === MessageItemType.VOICE && item.voice_item?.text) {
       return item.voice_item.text;
     }
   }
-  return "";
+  return '';
 }
 
 export type WeixinInboundMediaOpts = {
@@ -222,18 +241,18 @@ export function weixinMessageToMsgContext(
   accountId: string,
   opts?: WeixinInboundMediaOpts,
 ): WeixinMsgContext {
-  const from_user_id = msg.from_user_id ?? "";
+  const from_user_id = msg.from_user_id ?? '';
   const ctx: WeixinMsgContext = {
     Body: bodyFromItemList(msg.item_list),
     From: from_user_id,
     To: from_user_id,
     AccountId: accountId,
-    OriginatingChannel: "openclaw-weixin",
+    OriginatingChannel: 'openclaw-weixin',
     OriginatingTo: from_user_id,
     MessageSid: generateMessageSid(),
     Timestamp: msg.create_time_ms,
-    Provider: "openclaw-weixin",
-    ChatType: "direct",
+    Provider: 'openclaw-weixin',
+    ChatType: 'direct',
   };
   if (msg.context_token) {
     ctx.context_token = msg.context_token;
@@ -241,22 +260,24 @@ export function weixinMessageToMsgContext(
 
   if (opts?.decryptedPicPath) {
     ctx.MediaPath = opts.decryptedPicPath;
-    ctx.MediaType = "image/*";
+    ctx.MediaType = 'image/*';
   } else if (opts?.decryptedVideoPath) {
     ctx.MediaPath = opts.decryptedVideoPath;
-    ctx.MediaType = "video/mp4";
+    ctx.MediaType = 'video/mp4';
   } else if (opts?.decryptedFilePath) {
     ctx.MediaPath = opts.decryptedFilePath;
-    ctx.MediaType = opts.fileMediaType ?? "application/octet-stream";
+    ctx.MediaType = opts.fileMediaType ?? 'application/octet-stream';
   } else if (opts?.decryptedVoicePath) {
     ctx.MediaPath = opts.decryptedVoicePath;
-    ctx.MediaType = opts.voiceMediaType ?? "audio/wav";
+    ctx.MediaType = opts.voiceMediaType ?? 'audio/wav';
   }
 
   return ctx;
 }
 
 /** Extract the context_token from an inbound WeixinMsgContext. */
-export function getContextTokenFromMsgContext(ctx: WeixinMsgContext): string | undefined {
+export function getContextTokenFromMsgContext(
+  ctx: WeixinMsgContext,
+): string | undefined {
   return ctx.context_token;
 }

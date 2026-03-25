@@ -1,15 +1,15 @@
-import crypto from "node:crypto";
-import fs from "node:fs/promises";
-import path from "node:path";
+import crypto from 'node:crypto';
+import fs from 'node:fs/promises';
+import path from 'node:path';
 
-import { getUploadUrl } from "../api/api.js";
-import type { WeixinApiOptions } from "../api/api.js";
-import { aesEcbPaddedSize } from "./aes-ecb.js";
-import { uploadBufferToCdn } from "./cdn-upload.js";
-import { logger } from "../util/logger.js";
-import { getExtensionFromContentTypeOrUrl } from "../media/mime.js";
-import { tempFileName } from "../util/random.js";
-import { UploadMediaType } from "../api/types.js";
+import { getUploadUrl } from '../api/api.js';
+import type { WeixinApiOptions } from '../api/api.js';
+import { aesEcbPaddedSize } from './aes-ecb.js';
+import { uploadBufferToCdn } from './cdn-upload.js';
+import { logger } from '../util/logger.js';
+import { getExtensionFromContentTypeOrUrl } from '../media/mime.js';
+import { tempFileName } from '../util/random.js';
+import { UploadMediaType } from '../api/types.js';
 
 export type UploadedFileInfo = {
   filekey: string;
@@ -27,7 +27,10 @@ export type UploadedFileInfo = {
  * Download a remote media URL (image, video, file) to a local temp file in destDir.
  * Returns the local file path; extension is inferred from Content-Type / URL.
  */
-export async function downloadRemoteImageToTemp(url: string, destDir: string): Promise<string> {
+export async function downloadRemoteImageToTemp(
+  url: string,
+  destDir: string,
+): Promise<string> {
   logger.debug(`downloadRemoteImageToTemp: fetching url=${url}`);
   const res = await fetch(url);
   if (!res.ok) {
@@ -38,8 +41,11 @@ export async function downloadRemoteImageToTemp(url: string, destDir: string): P
   const buf = Buffer.from(await res.arrayBuffer());
   logger.debug(`downloadRemoteImageToTemp: downloaded ${buf.length} bytes`);
   await fs.mkdir(destDir, { recursive: true });
-  const ext = getExtensionFromContentTypeOrUrl(res.headers.get("content-type"), url);
-  const name = tempFileName("weixin-remote", ext);
+  const ext = getExtensionFromContentTypeOrUrl(
+    res.headers.get('content-type'),
+    url,
+  );
+  const name = tempFileName('weixin-remote', ext);
   const filePath = path.join(destDir, name);
   await fs.writeFile(filePath, buf);
   logger.debug(`downloadRemoteImageToTemp: saved to ${filePath} ext=${ext}`);
@@ -61,9 +67,9 @@ async function uploadMediaToCdn(params: {
 
   const plaintext = await fs.readFile(filePath);
   const rawsize = plaintext.length;
-  const rawfilemd5 = crypto.createHash("md5").update(plaintext).digest("hex");
+  const rawfilemd5 = crypto.createHash('md5').update(plaintext).digest('hex');
   const filesize = aesEcbPaddedSize(rawsize);
-  const filekey = crypto.randomBytes(16).toString("hex");
+  const filekey = crypto.randomBytes(16).toString('hex');
   const aeskey = crypto.randomBytes(16);
 
   logger.debug(
@@ -79,7 +85,7 @@ async function uploadMediaToCdn(params: {
     rawfilemd5,
     filesize,
     no_need_thumb: true,
-    aeskey: aeskey.toString("hex"),
+    aeskey: aeskey.toString('hex'),
   });
 
   const uploadParam = uploadUrlResp.upload_param;
@@ -90,19 +96,20 @@ async function uploadMediaToCdn(params: {
     throw new Error(`${label}: getUploadUrl returned no upload_param`);
   }
 
-  const { downloadParam: downloadEncryptedQueryParam } = await uploadBufferToCdn({
-    buf: plaintext,
-    uploadParam,
-    filekey,
-    cdnBaseUrl,
-    aeskey,
-    label: `${label}[orig filekey=${filekey}]`,
-  });
+  const { downloadParam: downloadEncryptedQueryParam } =
+    await uploadBufferToCdn({
+      buf: plaintext,
+      uploadParam,
+      filekey,
+      cdnBaseUrl,
+      aeskey,
+      label: `${label}[orig filekey=${filekey}]`,
+    });
 
   return {
     filekey,
     downloadEncryptedQueryParam,
-    aeskey: aeskey.toString("hex"),
+    aeskey: aeskey.toString('hex'),
     fileSize: rawsize,
     fileSizeCiphertext: filesize,
   };
@@ -118,7 +125,7 @@ export async function uploadFileToWeixin(params: {
   return uploadMediaToCdn({
     ...params,
     mediaType: UploadMediaType.IMAGE,
-    label: "uploadFileToWeixin",
+    label: 'uploadFileToWeixin',
   });
 }
 
@@ -132,7 +139,7 @@ export async function uploadVideoToWeixin(params: {
   return uploadMediaToCdn({
     ...params,
     mediaType: UploadMediaType.VIDEO,
-    label: "uploadVideoToWeixin",
+    label: 'uploadVideoToWeixin',
   });
 }
 
@@ -150,6 +157,6 @@ export async function uploadFileAttachmentToWeixin(params: {
   return uploadMediaToCdn({
     ...params,
     mediaType: UploadMediaType.FILE,
-    label: "uploadFileAttachmentToWeixin",
+    label: 'uploadFileAttachmentToWeixin',
   });
 }

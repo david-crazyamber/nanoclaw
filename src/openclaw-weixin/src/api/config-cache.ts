@@ -1,4 +1,4 @@
-import { getConfig } from "./api.js";
+import { getConfig } from './api.js';
 
 /** Subset of getConfig fields that we actually need; add new fields here as needed. */
 export interface CachedConfig {
@@ -28,7 +28,10 @@ export class WeixinConfigManager {
     private log: (msg: string) => void,
   ) {}
 
-  async getForUser(userId: string, contextToken?: string): Promise<CachedConfig> {
+  async getForUser(
+    userId: string,
+    contextToken?: string,
+  ): Promise<CachedConfig> {
     const now = Date.now();
     const entry = this.cache.get(userId);
     const shouldFetch = !entry || now >= entry.nextFetchAt;
@@ -44,18 +47,20 @@ export class WeixinConfigManager {
         });
         if (resp.ret === 0) {
           this.cache.set(userId, {
-            config: { typingTicket: resp.typing_ticket ?? "" },
+            config: { typingTicket: resp.typing_ticket ?? '' },
             everSucceeded: true,
             nextFetchAt: now + Math.random() * CONFIG_CACHE_TTL_MS,
             retryDelayMs: CONFIG_CACHE_INITIAL_RETRY_MS,
           });
           this.log(
-            `[weixin] config ${entry?.everSucceeded ? "refreshed" : "cached"} for ${userId}`,
+            `[weixin] config ${entry?.everSucceeded ? 'refreshed' : 'cached'} for ${userId}`,
           );
           fetchOk = true;
         }
       } catch (err) {
-        this.log(`[weixin] getConfig failed for ${userId} (ignored): ${String(err)}`);
+        this.log(
+          `[weixin] getConfig failed for ${userId} (ignored): ${String(err)}`,
+        );
       }
       if (!fetchOk) {
         const prevDelay = entry?.retryDelayMs ?? CONFIG_CACHE_INITIAL_RETRY_MS;
@@ -65,7 +70,7 @@ export class WeixinConfigManager {
           entry.retryDelayMs = nextDelay;
         } else {
           this.cache.set(userId, {
-            config: { typingTicket: "" },
+            config: { typingTicket: '' },
             everSucceeded: false,
             nextFetchAt: now + CONFIG_CACHE_INITIAL_RETRY_MS,
             retryDelayMs: CONFIG_CACHE_INITIAL_RETRY_MS,
@@ -74,6 +79,6 @@ export class WeixinConfigManager {
       }
     }
 
-    return this.cache.get(userId)?.config ?? { typingTicket: "" };
+    return this.cache.get(userId)?.config ?? { typingTicket: '' };
   }
 }

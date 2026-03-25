@@ -156,13 +156,16 @@ function buildVolumeMounts(
               ANTHROPIC_MODEL: modelEnv.ANTHROPIC_MODEL,
             }),
             ...(modelEnv.ANTHROPIC_DEFAULT_HAIKU_MODEL && {
-              ANTHROPIC_DEFAULT_HAIKU_MODEL: modelEnv.ANTHROPIC_DEFAULT_HAIKU_MODEL,
+              ANTHROPIC_DEFAULT_HAIKU_MODEL:
+                modelEnv.ANTHROPIC_DEFAULT_HAIKU_MODEL,
             }),
             ...(modelEnv.ANTHROPIC_DEFAULT_OPUS_MODEL && {
-              ANTHROPIC_DEFAULT_OPUS_MODEL: modelEnv.ANTHROPIC_DEFAULT_OPUS_MODEL,
+              ANTHROPIC_DEFAULT_OPUS_MODEL:
+                modelEnv.ANTHROPIC_DEFAULT_OPUS_MODEL,
             }),
             ...(modelEnv.ANTHROPIC_DEFAULT_SONNET_MODEL && {
-              ANTHROPIC_DEFAULT_SONNET_MODEL: modelEnv.ANTHROPIC_DEFAULT_SONNET_MODEL,
+              ANTHROPIC_DEFAULT_SONNET_MODEL:
+                modelEnv.ANTHROPIC_DEFAULT_SONNET_MODEL,
             }),
             ...(modelEnv.API_TIMEOUT_MS && {
               API_TIMEOUT_MS: modelEnv.API_TIMEOUT_MS,
@@ -256,10 +259,7 @@ function buildContainerArgs(
 
   // Route API traffic through the credential proxy (containers never see real secrets)
   const proxyUrl = `http://${CONTAINER_HOST_GATEWAY}:${CREDENTIAL_PROXY_PORT}`;
-  args.push(
-    '-e',
-    `ANTHROPIC_BASE_URL=${proxyUrl}`,
-  );
+  args.push('-e', `ANTHROPIC_BASE_URL=${proxyUrl}`);
 
   // Mirror the host's auth method with a placeholder value.
   // API key mode: SDK sends x-api-key, proxy replaces with real key.
@@ -304,7 +304,9 @@ function buildContainerArgs(
       timezone: TIMEZONE,
       hostUid: hostUid != null && hostUid !== 0 ? hostUid : 'default',
       mountCount: mounts.length,
-      mounts: mounts.map((m) => `${m.containerPath}${m.readonly ? ' (ro)' : ''}`),
+      mounts: mounts.map(
+        (m) => `${m.containerPath}${m.readonly ? ' (ro)' : ''}`,
+      ),
     },
     'Container configuration',
   );
@@ -621,9 +623,9 @@ export async function runContainerAgent(
             group: group.name,
             code,
             duration,
-            stderr: stderr.slice(-500),  // Last 500 chars for log
-            stderrFull: stderr,  // Full stderr in debug mode
-            stdoutSummary: stdout.slice(0, 200),  // First 200 chars
+            stderr: stderr.slice(-500), // Last 500 chars for log
+            stderrFull: stderr, // Full stderr in debug mode
+            stdoutSummary: stdout.slice(0, 200), // First 200 chars
             proxyUrl: `http://${CONTAINER_HOST_GATEWAY}:${CREDENTIAL_PROXY_PORT}`,
             authMode: detectAuthMode(),
             logFile,

@@ -1,4 +1,4 @@
-import { logger } from "../util/logger.js";
+import { logger } from '../util/logger.js';
 
 /** Default sample rate for Weixin voice messages. */
 const SILK_SAMPLE_RATE = 24_000;
@@ -13,14 +13,14 @@ function pcmBytesToWav(pcm: Uint8Array, sampleRate: number): Buffer {
   const buf = Buffer.allocUnsafe(totalSize);
   let offset = 0;
 
-  buf.write("RIFF", offset);
+  buf.write('RIFF', offset);
   offset += 4;
   buf.writeUInt32LE(totalSize - 8, offset);
   offset += 4;
-  buf.write("WAVE", offset);
+  buf.write('WAVE', offset);
   offset += 4;
 
-  buf.write("fmt ", offset);
+  buf.write('fmt ', offset);
   offset += 4;
   buf.writeUInt32LE(16, offset);
   offset += 4; // fmt chunk size
@@ -37,7 +37,7 @@ function pcmBytesToWav(pcm: Uint8Array, sampleRate: number): Buffer {
   buf.writeUInt16LE(16, offset);
   offset += 2; // bits per sample
 
-  buf.write("data", offset);
+  buf.write('data', offset);
   offset += 4;
   buf.writeUInt32LE(pcmBytes, offset);
   offset += 4;
@@ -56,7 +56,7 @@ function pcmBytesToWav(pcm: Uint8Array, sampleRate: number): Buffer {
  */
 export async function silkToWav(silkBuf: Buffer): Promise<Buffer | null> {
   try {
-    const { decode } = await import("silk-wasm");
+    const { decode } = await import('silk-wasm');
 
     logger.debug(`silkToWav: decoding ${silkBuf.length} bytes of SILK`);
     const result = await decode(silkBuf, SILK_SAMPLE_RATE);
@@ -68,7 +68,9 @@ export async function silkToWav(silkBuf: Buffer): Promise<Buffer | null> {
     logger.debug(`silkToWav: WAV size=${wav.length}`);
     return wav;
   } catch (err) {
-    logger.warn(`silkToWav: transcode failed, will use raw silk err=${String(err)}`);
+    logger.warn(
+      `silkToWav: transcode failed, will use raw silk err=${String(err)}`,
+    );
     return null;
   }
 }

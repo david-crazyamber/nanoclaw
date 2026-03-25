@@ -1,16 +1,16 @@
-import type { ReplyPayload } from "openclaw/plugin-sdk/reply-runtime";
-import { stripMarkdown } from "openclaw/plugin-sdk/text-runtime";
+import type { ReplyPayload } from 'openclaw/plugin-sdk/reply-runtime';
+import { stripMarkdown } from 'openclaw/plugin-sdk/text-runtime';
 
-import { sendMessage as sendMessageApi } from "../api/api.js";
-import type { WeixinApiOptions } from "../api/api.js";
-import { logger } from "../util/logger.js";
-import { generateId } from "../util/random.js";
-import type { MessageItem, SendMessageReq } from "../api/types.js";
-import { MessageItemType, MessageState, MessageType } from "../api/types.js";
-import type { UploadedFileInfo } from "../cdn/upload.js";
+import { sendMessage as sendMessageApi } from '../api/api.js';
+import type { WeixinApiOptions } from '../api/api.js';
+import { logger } from '../util/logger.js';
+import { generateId } from '../util/random.js';
+import type { MessageItem, SendMessageReq } from '../api/types.js';
+import { MessageItemType, MessageState, MessageType } from '../api/types.js';
+import type { UploadedFileInfo } from '../cdn/upload.js';
 
 function generateClientId(): string {
-  return generateId("openclaw-weixin");
+  return generateId('openclaw-weixin');
 }
 
 /**
@@ -20,20 +20,24 @@ function generateClientId(): string {
 export function markdownToPlainText(text: string): string {
   let result = text;
   // Code blocks: strip fences, keep code content
-  result = result.replace(/```[^\n]*\n?([\s\S]*?)```/g, (_, code: string) => code.trim());
+  result = result.replace(/```[^\n]*\n?([\s\S]*?)```/g, (_, code: string) =>
+    code.trim(),
+  );
   // Images: remove entirely
-  result = result.replace(/!\[[^\]]*\]\([^)]*\)/g, "");
+  result = result.replace(/!\[[^\]]*\]\([^)]*\)/g, '');
   // Links: keep display text only
-  result = result.replace(/\[([^\]]+)\]\([^)]*\)/g, "$1");
+  result = result.replace(/\[([^\]]+)\]\([^)]*\)/g, '$1');
   // Tables: remove separator rows, then strip leading/trailing pipes and convert inner pipes to spaces
-  result = result.replace(/^\|[\s:|-]+\|$/gm, "");
+  result = result.replace(/^\|[\s:|-]+\|$/gm, '');
   result = result.replace(/^\|(.+)\|$/gm, (_, inner: string) =>
-    inner.split("|").map((cell) => cell.trim()).join("  "),
+    inner
+      .split('|')
+      .map((cell) => cell.trim())
+      .join('  '),
   );
   result = stripMarkdown(result);
   return result;
 }
-
 
 /** Build a SendMessageReq containing a single text message. */
 function buildTextMessageReq(params: {
@@ -48,7 +52,7 @@ function buildTextMessageReq(params: {
     : [];
   return {
     msg: {
-      from_user_id: "",
+      from_user_id: '',
       to_user_id: to,
       client_id: clientId,
       message_type: MessageType.BOT,
@@ -69,7 +73,7 @@ function buildSendMessageReq(params: {
   const { to, contextToken, payload, clientId } = params;
   return buildTextMessageReq({
     to,
-    text: payload.text ?? "",
+    text: payload.text ?? '',
     contextToken,
     clientId,
   });
@@ -85,7 +89,9 @@ export async function sendMessageWeixin(params: {
 }): Promise<{ messageId: string }> {
   const { to, text, opts } = params;
   if (!opts.contextToken) {
-    logger.warn(`sendMessageWeixin: contextToken missing for to=${to}, sending without context`);
+    logger.warn(
+      `sendMessageWeixin: contextToken missing for to=${to}, sending without context`,
+    );
   }
   const clientId = generateClientId();
   const req = buildSendMessageReq({
@@ -102,7 +108,9 @@ export async function sendMessageWeixin(params: {
       body: req,
     });
   } catch (err) {
-    logger.error(`sendMessageWeixin: failed to=${to} clientId=${clientId} err=${String(err)}`);
+    logger.error(
+      `sendMessageWeixin: failed to=${to} clientId=${clientId} err=${String(err)}`,
+    );
     throw err;
   }
   return { messageId: clientId };
@@ -127,12 +135,12 @@ async function sendMediaItems(params: {
   }
   items.push(mediaItem);
 
-  let lastClientId = "";
+  let lastClientId = '';
   for (const item of items) {
     lastClientId = generateClientId();
     const req: SendMessageReq = {
       msg: {
-        from_user_id: "",
+        from_user_id: '',
         to_user_id: to,
         client_id: lastClientId,
         message_type: MessageType.BOT,
@@ -177,7 +185,9 @@ export async function sendImageMessageWeixin(params: {
 }): Promise<{ messageId: string }> {
   const { to, text, uploaded, opts } = params;
   if (!opts.contextToken) {
-    logger.warn(`sendImageMessageWeixin: contextToken missing for to=${to}, sending without context`);
+    logger.warn(
+      `sendImageMessageWeixin: contextToken missing for to=${to}, sending without context`,
+    );
   }
   logger.info(
     `sendImageMessageWeixin: to=${to} filekey=${uploaded.filekey} fileSize=${uploaded.fileSize} aeskey=present`,
@@ -188,14 +198,20 @@ export async function sendImageMessageWeixin(params: {
     image_item: {
       media: {
         encrypt_query_param: uploaded.downloadEncryptedQueryParam,
-        aes_key: Buffer.from(uploaded.aeskey).toString("base64"),
+        aes_key: Buffer.from(uploaded.aeskey).toString('base64'),
         encrypt_type: 1,
       },
       mid_size: uploaded.fileSizeCiphertext,
     },
   };
 
-  return sendMediaItems({ to, text, mediaItem: imageItem, opts, label: "sendImageMessageWeixin" });
+  return sendMediaItems({
+    to,
+    text,
+    mediaItem: imageItem,
+    opts,
+    label: 'sendImageMessageWeixin',
+  });
 }
 
 /**
@@ -211,7 +227,9 @@ export async function sendVideoMessageWeixin(params: {
 }): Promise<{ messageId: string }> {
   const { to, text, uploaded, opts } = params;
   if (!opts.contextToken) {
-    logger.warn(`sendVideoMessageWeixin: contextToken missing for to=${to}, sending without context`);
+    logger.warn(
+      `sendVideoMessageWeixin: contextToken missing for to=${to}, sending without context`,
+    );
   }
 
   const videoItem: MessageItem = {
@@ -219,14 +237,20 @@ export async function sendVideoMessageWeixin(params: {
     video_item: {
       media: {
         encrypt_query_param: uploaded.downloadEncryptedQueryParam,
-        aes_key: Buffer.from(uploaded.aeskey).toString("base64"),
+        aes_key: Buffer.from(uploaded.aeskey).toString('base64'),
         encrypt_type: 1,
       },
       video_size: uploaded.fileSizeCiphertext,
     },
   };
 
-  return sendMediaItems({ to, text, mediaItem: videoItem, opts, label: "sendVideoMessageWeixin" });
+  return sendMediaItems({
+    to,
+    text,
+    mediaItem: videoItem,
+    opts,
+    label: 'sendVideoMessageWeixin',
+  });
 }
 
 /**
@@ -243,14 +267,16 @@ export async function sendFileMessageWeixin(params: {
 }): Promise<{ messageId: string }> {
   const { to, text, fileName, uploaded, opts } = params;
   if (!opts.contextToken) {
-    logger.warn(`sendFileMessageWeixin: contextToken missing for to=${to}, sending without context`);
+    logger.warn(
+      `sendFileMessageWeixin: contextToken missing for to=${to}, sending without context`,
+    );
   }
   const fileItem: MessageItem = {
     type: MessageItemType.FILE,
     file_item: {
       media: {
         encrypt_query_param: uploaded.downloadEncryptedQueryParam,
-        aes_key: Buffer.from(uploaded.aeskey).toString("base64"),
+        aes_key: Buffer.from(uploaded.aeskey).toString('base64'),
         encrypt_type: 1,
       },
       file_name: fileName,
@@ -258,5 +284,11 @@ export async function sendFileMessageWeixin(params: {
     },
   };
 
-  return sendMediaItems({ to, text, mediaItem: fileItem, opts, label: "sendFileMessageWeixin" });
+  return sendMediaItems({
+    to,
+    text,
+    mediaItem: fileItem,
+    opts,
+    label: 'sendFileMessageWeixin',
+  });
 }

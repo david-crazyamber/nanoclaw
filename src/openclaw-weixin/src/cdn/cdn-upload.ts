@@ -1,7 +1,7 @@
-import { encryptAesEcb } from "./aes-ecb.js";
-import { buildCdnUploadUrl } from "./cdn-url.js";
-import { logger } from "../util/logger.js";
-import { redactUrl } from "../util/redact.js";
+import { encryptAesEcb } from './aes-ecb.js';
+import { buildCdnUploadUrl } from './cdn-url.js';
+import { logger } from '../util/logger.js';
+import { redactUrl } from '../util/redact.js';
 
 /** Maximum retry attempts for CDN upload. */
 const UPLOAD_MAX_RETRIES = 3;
@@ -22,7 +22,9 @@ export async function uploadBufferToCdn(params: {
   const { buf, uploadParam, filekey, cdnBaseUrl, label, aeskey } = params;
   const ciphertext = encryptAesEcb(buf, aeskey);
   const cdnUrl = buildCdnUploadUrl({ cdnBaseUrl, uploadParam, filekey });
-  logger.debug(`${label}: CDN POST url=${redactUrl(cdnUrl)} ciphertextSize=${ciphertext.length}`);
+  logger.debug(
+    `${label}: CDN POST url=${redactUrl(cdnUrl)} ciphertextSize=${ciphertext.length}`,
+  );
 
   let downloadParam: string | undefined;
   let lastError: unknown;
@@ -30,40 +32,46 @@ export async function uploadBufferToCdn(params: {
   for (let attempt = 1; attempt <= UPLOAD_MAX_RETRIES; attempt++) {
     try {
       const res = await fetch(cdnUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/octet-stream" },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/octet-stream' },
         body: new Uint8Array(ciphertext),
       });
       if (res.status >= 400 && res.status < 500) {
-        const errMsg = res.headers.get("x-error-message") ?? (await res.text());
+        const errMsg = res.headers.get('x-error-message') ?? (await res.text());
         logger.error(
           `${label}: CDN client error attempt=${attempt} status=${res.status} errMsg=${errMsg}`,
         );
         throw new Error(`CDN upload client error ${res.status}: ${errMsg}`);
       }
       if (res.status !== 200) {
-        const errMsg = res.headers.get("x-error-message") ?? `status ${res.status}`;
+        const errMsg =
+          res.headers.get('x-error-message') ?? `status ${res.status}`;
         logger.error(
           `${label}: CDN server error attempt=${attempt} status=${res.status} errMsg=${errMsg}`,
         );
         throw new Error(`CDN upload server error: ${errMsg}`);
       }
-      downloadParam = res.headers.get("x-encrypted-param") ?? undefined;
+      downloadParam = res.headers.get('x-encrypted-param') ?? undefined;
       if (!downloadParam) {
         logger.error(
           `${label}: CDN response missing x-encrypted-param header attempt=${attempt}`,
         );
-        throw new Error("CDN upload response missing x-encrypted-param header");
+        throw new Error('CDN upload response missing x-encrypted-param header');
       }
       logger.debug(`${label}: CDN upload success attempt=${attempt}`);
       break;
     } catch (err) {
       lastError = err;
-      if (err instanceof Error && err.message.includes("client error")) throw err;
+      if (err instanceof Error && err.message.includes('client error'))
+        throw err;
       if (attempt < UPLOAD_MAX_RETRIES) {
-        logger.error(`${label}: attempt ${attempt} failed, retrying... err=${String(err)}`);
+        logger.error(
+          `${label}: attempt ${attempt} failed, retrying... err=${String(err)}`,
+        );
       } else {
-        logger.error(`${label}: all ${UPLOAD_MAX_RETRIES} attempts failed err=${String(err)}`);
+        logger.error(
+          `${label}: all ${UPLOAD_MAX_RETRIES} attempts failed err=${String(err)}`,
+        );
       }
     }
   }
