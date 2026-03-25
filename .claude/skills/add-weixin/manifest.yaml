@@ -1,0 +1,18 @@
+skill: weixin
+version: 1.0.0
+description: "WeChat (Weixin) integration via Tencent OpenClaw Weixin SDK"
+core_version: 0.1.0
+adds:
+  - src/channels/weixin.ts
+  - src/channels/weixin.test.ts
+modifies:
+  - src/index.ts
+  - src/config.ts
+structured:
+  npm_dependencies:
+    "@tencent-weixin/openclaw-weixin": "^1.0.2"
+  env_additions:
+    - WEIXIN_ONLY
+conflicts: []
+depends: []
+test: "npx vitest run src/channels/weixin.test.ts"

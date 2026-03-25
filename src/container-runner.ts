@@ -6,6 +6,8 @@ import { ChildProcess, exec, spawn } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 
+import { readEnvFile } from './env.js';
+
 import {
   CONTAINER_IMAGE,
   CONTAINER_MAX_OUTPUT_SIZE,
@@ -123,6 +125,17 @@ function buildVolumeMounts(
   );
   fs.mkdirSync(groupSessionsDir, { recursive: true });
   const settingsFile = path.join(groupSessionsDir, 'settings.json');
+
+  // Read model configuration from .env
+  const modelEnv = readEnvFile([
+    'ANTHROPIC_MODEL',
+    'ANTHROPIC_DEFAULT_HAIKU_MODEL',
+    'ANTHROPIC_DEFAULT_OPUS_MODEL',
+    'ANTHROPIC_DEFAULT_SONNET_MODEL',
+    'API_TIMEOUT_MS',
+    'CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC',
+  ]);
+
   if (!fs.existsSync(settingsFile)) {
     fs.writeFileSync(
       settingsFile,
@@ -138,6 +151,26 @@ function buildVolumeMounts(
             // Enable Claude's memory feature (persists user preferences between sessions)
             // https://code.claude.com/docs/en/memory#manage-auto-memory
             CLAUDE_CODE_DISABLE_AUTO_MEMORY: '0',
+            // Model configuration from .env
+            ...(modelEnv.ANTHROPIC_MODEL && {
+              ANTHROPIC_MODEL: modelEnv.ANTHROPIC_MODEL,
+            }),
+            ...(modelEnv.ANTHROPIC_DEFAULT_HAIKU_MODEL && {
+              ANTHROPIC_DEFAULT_HAIKU_MODEL: modelEnv.ANTHROPIC_DEFAULT_HAIKU_MODEL,
+            }),
+            ...(modelEnv.ANTHROPIC_DEFAULT_OPUS_MODEL && {
+              ANTHROPIC_DEFAULT_OPUS_MODEL: modelEnv.ANTHROPIC_DEFAULT_OPUS_MODEL,
+            }),
+            ...(modelEnv.ANTHROPIC_DEFAULT_SONNET_MODEL && {
+              ANTHROPIC_DEFAULT_SONNET_MODEL: modelEnv.ANTHROPIC_DEFAULT_SONNET_MODEL,
+            }),
+            ...(modelEnv.API_TIMEOUT_MS && {
+              API_TIMEOUT_MS: modelEnv.API_TIMEOUT_MS,
+            }),
+            ...(modelEnv.CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC && {
+              CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC:
+                modelEnv.CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC,
+            }),
           },
         },
         null,
@@ -222,9 +255,10 @@ function buildContainerArgs(
   args.push('-e', `TZ=${TIMEZONE}`);
 
   // Route API traffic through the credential proxy (containers never see real secrets)
+  const proxyUrl = `http://${CONTAINER_HOST_GATEWAY}:${CREDENTIAL_PROXY_PORT}`;
   args.push(
     '-e',
-    `ANTHROPIC_BASE_URL=http://${CONTAINER_HOST_GATEWAY}:${CREDENTIAL_PROXY_PORT}`,
+    `ANTHROPIC_BASE_URL=${proxyUrl}`,
   );
 
   // Mirror the host's auth method with a placeholder value.
@@ -260,6 +294,20 @@ function buildContainerArgs(
   }
 
   args.push(CONTAINER_IMAGE);
+
+  // Log container configuration (sanitized - no secrets)
+  logger.info(
+    {
+      containerName,
+      authMode,
+      proxyUrl,
+      timezone: TIMEZONE,
+      hostUid: hostUid != null && hostUid !== 0 ? hostUid : 'default',
+      mountCount: mounts.length,
+      mounts: mounts.map((m) => `${m.containerPath}${m.readonly ? ' (ro)' : ''}`),
+    },
+    'Container configuration',
+  );
 
   return args;
 }
@@ -410,7 +458,13 @@ export async function runContainerAgent(
     const killOnTimeout = () => {
       timedOut = true;
       logger.error(
-        { group: group.name, containerName },
+        {
+          group: group.name,
+          containerName,
+          timeoutMs,
+          configTimeout,
+          hadStreamingOutput,
+        },
         'Container timeout, stopping gracefully',
       );
       exec(stopContainer(containerName), { timeout: 15000 }, (err) => {
@@ -449,6 +503,9 @@ export async function runContainerAgent(
             `Duration: ${duration}ms`,
             `Exit Code: ${code}`,
             `Had Streaming Output: ${hadStreamingOutput}`,
+            `Timeout Config: ${timeoutMs}ms (configured: ${configTimeout}ms)`,
+            `Proxy URL: http://${CONTAINER_HOST_GATEWAY}:${CREDENTIAL_PROXY_PORT}`,
+            `Auth Mode: ${detectAuthMode()}`,
           ].join('\n'),
         );
 
@@ -471,7 +528,14 @@ export async function runContainerAgent(
         }
 
         logger.error(
-          { group: group.name, containerName, duration, code },
+          {
+            group: group.name,
+            containerName,
+            duration,
+            code,
+            hadStreamingOutput,
+            proxyUrl: `http://${CONTAINER_HOST_GATEWAY}:${CREDENTIAL_PROXY_PORT}`,
+          },
           'Container timed out with no output',
         );
 
@@ -557,8 +621,11 @@ export async function runContainerAgent(
             group: group.name,
             code,
             duration,
-            stderr,
-            stdout,
+            stderr: stderr.slice(-500),  // Last 500 chars for log
+            stderrFull: stderr,  // Full stderr in debug mode
+            stdoutSummary: stdout.slice(0, 200),  // First 200 chars
+            proxyUrl: `http://${CONTAINER_HOST_GATEWAY}:${CREDENTIAL_PROXY_PORT}`,
+            authMode: detectAuthMode(),
             logFile,
           },
           'Container exited with error',

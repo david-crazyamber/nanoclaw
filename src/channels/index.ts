@@ -10,3 +10,8 @@
 // telegram
 
 // whatsapp
+
+// weixin
+import { WeixinChannel } from './weixin.js';
+import { registerChannel } from './registry.js';
+registerChannel('weixin', (opts) => new WeixinChannel(opts));

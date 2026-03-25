@@ -117,6 +117,13 @@ function log(message: string): void {
   console.error(`[agent-runner] ${message}`);
 }
 
+function logDebug(message: string): void {
+  // Only log debug messages if DEBUG env var is set
+  if (process.env.DEBUG === '1' || process.env.LOG_LEVEL === 'debug') {
+    console.error(`[agent-runner:debug] ${message}`);
+  }
+}
+
 function getSessionSummary(sessionId: string, transcriptPath: string): string | null {
   const projectDir = path.dirname(transcriptPath);
   const indexPath = path.join(projectDir, 'sessions-index.json');
@@ -432,9 +439,11 @@ async function runQuery(
     messageCount++;
     const msgType = message.type === 'system' ? `system/${(message as { subtype?: string }).subtype}` : message.type;
     log(`[msg #${messageCount}] type=${msgType}`);
+    logDebug(`Message details: ${JSON.stringify({ type: message.type, subtype: (message as { subtype?: string }).subtype })}`);
 
     if (message.type === 'assistant' && 'uuid' in message) {
       lastAssistantUuid = (message as { uuid: string }).uuid;
+      logDebug(`Assistant message UUID: ${lastAssistantUuid}`);
     }
 
     if (message.type === 'system' && message.subtype === 'init') {
@@ -485,6 +494,13 @@ async function main(): Promise<void> {
   // No real secrets exist in the container environment.
   const sdkEnv: Record<string, string | undefined> = { ...process.env };
 
+  // Log SDK configuration (sanitized - no secrets)
+  log(`SDK Configuration:`);
+  log(`  ANTHROPIC_BASE_URL: ${sdkEnv.ANTHROPIC_BASE_URL || 'not set (will use default)'}`);
+  log(`  ANTHROPIC_API_KEY: ${sdkEnv.ANTHROPIC_API_KEY ? `set (${sdkEnv.ANTHROPIC_API_KEY.length} chars)` : 'not set'}`);
+  log(`  CLAUDE_CODE_OAUTH_TOKEN: ${sdkEnv.CLAUDE_CODE_OAUTH_TOKEN ? `set (${sdkEnv.CLAUDE_CODE_OAUTH_TOKEN.length} chars)` : 'not set'}`);
+  log(`  DEBUG mode: ${process.env.DEBUG === '1' || process.env.LOG_LEVEL === 'debug' ? 'enabled' : 'disabled'}`);
+
   const __dirname = path.dirname(fileURLToPath(import.meta.url));
   const mcpServerPath = path.join(__dirname, 'ipc-mcp-stdio.js');
 
@@ -510,6 +526,7 @@ async function main(): Promise<void> {
   try {
     while (true) {
       log(`Starting query (session: ${sessionId || 'new'}, resumeAt: ${resumeAt || 'latest'})...`);
+      logDebug(`SDK env: ANTHROPIC_BASE_URL=${sdkEnv.ANTHROPIC_BASE_URL || 'default'}`);
 
       const queryResult = await runQuery(prompt, sessionId, mcpServerPath, containerInput, sdkEnv, resumeAt);
       if (queryResult.newSessionId) {
@@ -544,7 +561,11 @@ async function main(): Promise<void> {
     }
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : String(err);
+    const errorStack = err instanceof Error ? err.stack : undefined;
     log(`Agent error: ${errorMessage}`);
+    if (errorStack) {
+      logDebug(`Agent error stack trace: ${errorStack}`);
+    }
     writeOutput({
       status: 'error',
       result: null,
