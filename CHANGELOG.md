@@ -22,6 +22,7 @@ All notable changes to NanoClaw will be documented in this file.
 - Enhanced credential proxy with improved test coverage
 - Container runner updates for multi-channel support
 - Container Dockerfile improvements
+- Code formatting improvements: standardized quote style, trailing commas, line breaks across WeChat channel and credential proxy
 
 ## [1.2.0](https://github.com/qwibitai/nanoclaw/compare/v1.1.6...v1.2.0)
 
