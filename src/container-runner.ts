@@ -254,11 +254,21 @@ function buildContainerArgs(
 ): string[] {
   const args: string[] = ['run', '-i', '--rm', '--name', containerName];
 
+  // Use host networking when UFW/firewall blocks docker bridge traffic.
+  // With --network host the container shares the host's network stack,
+  // so the credential proxy is reachable on localhost.
+  const envVars = readEnvFile(['CONTAINER_NETWORK_HOST']);
+  const useHostNetwork = envVars.CONTAINER_NETWORK_HOST === '1';
+  if (useHostNetwork) {
+    args.push('--network', 'host');
+  }
+
   // Pass host timezone so container's local time matches the user's
   args.push('-e', `TZ=${TIMEZONE}`);
 
   // Route API traffic through the credential proxy (containers never see real secrets)
-  const proxyUrl = `http://${CONTAINER_HOST_GATEWAY}:${CREDENTIAL_PROXY_PORT}`;
+  const proxyHost = useHostNetwork ? '127.0.0.1' : CONTAINER_HOST_GATEWAY;
+  const proxyUrl = `http://${proxyHost}:${CREDENTIAL_PROXY_PORT}`;
   args.push('-e', `ANTHROPIC_BASE_URL=${proxyUrl}`);
 
   // Mirror the host's auth method with a placeholder value.
