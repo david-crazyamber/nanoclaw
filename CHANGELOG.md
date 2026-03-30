@@ -5,6 +5,14 @@ All notable changes to NanoClaw will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- **Telegram channel support** - New messaging channel using grammy library
+  - Complete Telegram bot integration with message handling
+  - Support for text, photo, video, voice, documents, stickers, location, contact
+  - Thread/topic support for supergroups
+  - `/chatid` and `/ping` bot commands
+  - Auto-convert @bot mentions to trigger pattern
+  - Container network host mode option for UFW compatibility
+  - Full unit test coverage (949 lines of tests)
 - **WeChat (Weixin) channel support** - New messaging channel with QR code login
   - WeChat channel implementation with long-polling message reception
   - `/add-weixin` skill for easy installation
